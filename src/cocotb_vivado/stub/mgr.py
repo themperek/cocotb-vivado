@@ -1,7 +1,7 @@
 import traceback
 
 import os
-from cocotb_xsi import xsi
+from cocotb_vivado import xsi
 
 MODULE = 0
 REG = 1
@@ -102,7 +102,7 @@ class Mgr(object):
     _inst = None
 
     def __init__(self):
-        self.xsim_design = os.environ.get("COCOTB_XSIM_DESIGN")
+        self.xsim_design = os.environ.get("COCOTB_VIVADO_DESIGN")
 
         self.cb_d = {}
         self._stop_request = False

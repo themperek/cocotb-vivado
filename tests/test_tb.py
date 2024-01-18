@@ -1,4 +1,4 @@
-from cocotb_xsi import run
+from cocotb_vivado import run
 import subprocess
 import os
 

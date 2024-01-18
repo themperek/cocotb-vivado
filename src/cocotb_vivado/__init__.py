@@ -3,7 +3,7 @@ import importlib
 import traceback
 import os
 
-sys.modules["cocotb.simulator"] = importlib.import_module("cocotb_xsi.stub.simulator")
+sys.modules["cocotb.simulator"] = importlib.import_module("cocotb_vivado.stub.simulator")
 
 from cocotb import *
 
@@ -12,7 +12,7 @@ def run(module, xsim_design, top_level_lang):
     if top_level_lang != "verilog":
         raise Exception("Only verilog supported as top level languge")
 
-    os.environ["COCOTB_XSIM_DESIGN"] = xsim_design
+    os.environ["COCOTB_VIVADO_DESIGN"] = xsim_design
     os.environ["MODULE"] = module
 
     import cocotb

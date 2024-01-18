@@ -1,6 +1,6 @@
-# cocotb-xsi
+# cocotb-vivado
 
-A very limited [cocotb](https://github.com/cocotb/cocotb/) interface to the [Xilinx XSIM](https://docs.xilinx.com/r/en-US/ug835-vivado-tcl-commands/xsim) simulator. 
+A very limited [cocotb](https://github.com/cocotb/cocotb/) interface to the [Xilinx Vivado Simulator](https://docs.xilinx.com/v/u/en-US/dh0010-vivado-simulation-hub) simulator. 
 Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
 
 ## The project is at a proof of concept stage
