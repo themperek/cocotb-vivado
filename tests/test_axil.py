@@ -1,6 +1,7 @@
-from cocotb_xsi import run
+from cocotb_vivado import run
 import subprocess
 import os
+import pathlib
 
 import cocotb
 from cocotb.triggers import Timer
@@ -9,7 +10,7 @@ from cocotb.triggers import Timer
 class OnFallingSignal:
     def __init__(self, signal):
         self.signal = signal
-        self.timer = cocotb.triggers.Timer(10, "ns")
+        self.timer = Timer(100, "ns")
 
     def __await__(self):
         return self._async_method().__await__()
@@ -27,7 +28,7 @@ class OnFallingSignal:
 class OnRisingSignal:
     def __init__(self, signal):
         self.signal = signal
-        self.timer = cocotb.triggers.Timer(10, "ns")
+        self.timer = Timer(100, "ns")
 
     def __await__(self):
         return self._async_method().__await__()
@@ -84,11 +85,13 @@ async def cocotb_axil_test(dut):
 
 
 def test_axil():
+    src_path = pathlib.Path(__file__).parent.absolute()
+
     if not os.path.exists("xsim.dir/work.test_axil/xsimk.so"):
-        subprocess.run(["xvlog", "test_axil.v"])
+        subprocess.run(["xvlog", src_path / "test_axil.v"])
         subprocess.run(["xelab", "work.test_axil", "-dll"])
 
-    run(module="test_axi", xsim_design="xsim.dir/work.test_axil/xsimk.so", top_level_lang="verilog")
+    run(module="test_axil", xsim_design="xsim.dir/work.test_axil/xsimk.so", top_level_lang="verilog")
 
 
 if __name__ == "__main__":

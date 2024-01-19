@@ -1,6 +1,7 @@
 from cocotb_vivado import run
 import subprocess
 import os
+import pathlib
 
 from cocotb.triggers import Timer
 import cocotb
@@ -47,8 +48,10 @@ async def cocotb_tb_test(dut):
 
 
 def test_tb():
+    src_path = pathlib.Path(__file__).parent.absolute()
+
     if not os.path.exists("xsim.dir/work.tb/xsimk.so"):
-        subprocess.run(["xvlog", "tb.v"])
+        subprocess.run(["xvlog", src_path / "tb.v"])
         subprocess.run(["xelab", "work.tb", "-dll"])
 
     run(module="test_tb", xsim_design="xsim.dir/work.tb/xsimk.so", top_level_lang="verilog")

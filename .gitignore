@@ -128,13 +128,13 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-tests/xsim.dir
-tests/xelab.*
-tests/xvlog.*
-tests/xvhdl.*
-tests/*.wdb
-tests/*.vcd
-tests/vivado*.jou
+xsim.dir
+xelab.*
+xvlog.*
+xvhdl.*
+*.wdb
+*.vcd
+vivado*.jou
 .vscode
-tests/fw
+fw
 results.xml

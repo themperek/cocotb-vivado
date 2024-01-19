@@ -1,6 +1,7 @@
-from cocotb_xsi import run
+from cocotb_vivado import run
 import subprocess
 import os
+import pathlib
 
 import cocotb
 from cocotb.triggers import Timer
@@ -9,7 +10,7 @@ from cocotb.triggers import Timer
 class OnFallingSignal:
     def __init__(self, signal):
         self.signal = signal
-        self.timer = Timer(10, "ns")
+        self.timer = Timer(100, "ns")
 
     def __await__(self):
         return self._async_method().__await__()
@@ -27,7 +28,7 @@ class OnFallingSignal:
 class OnRisingSignal:
     def __init__(self, signal):
         self.signal = signal
-        self.timer = Timer(10, "ns")
+        self.timer = Timer(100, "ns")
 
     def __await__(self):
         return self._async_method().__await__()
@@ -83,8 +84,10 @@ async def cocotb_fw_test(dut):
 
 
 def test_fw():
+    src_path = pathlib.Path(__file__).parent.absolute()
+
     if not os.path.exists("xsim.dir/fw_wrapper_behav/xsimk.so"):
-        subprocess.run("vivado -nolog -mode tcl -source fw.tcl".split())
+        subprocess.run(["vivado", "-nolog", "-mode", "tcl", "-source", src_path / "fw.tcl"])
         subprocess.run(["xvlog", "-prj", "fw/fw.sim/sim_1/behav/xsim/fw_wrapper_vlog.prj"])
         subprocess.run(["xvhdl", "-prj", "fw/fw.sim/sim_1/behav/xsim/fw_wrapper_vhdl.prj"])
         subprocess.run(
