@@ -10,13 +10,18 @@ Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
 - Setting signal values is immediate, as one would use `setimmediatevalue`. 
 - Only `Verilog` at the top level is supported (to do).
 
+## Install 
+
+```cmd
+pip install cocotb-vivado
+```
+
 ## Usage
 
 See the `tests` folder for examples.
 
 ```cmd
 source ../Vivado/202X.X/settings64.sh
-cd tests
 export LD_LIBRARY_PATH=$XILINX_VIVADO/lib/lnx64.o
 pytest -s
 ```
