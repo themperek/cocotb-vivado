@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="cocotb-vivado",
-    version="0.0.1",
+    version="0.0.2",
     install_requires=["cocotb>=1.7,<=1.8"],
     packages=find_packages(where="./src"),
     package_dir={"": "src"},
@@ -17,7 +17,7 @@ setup(
     long_description_content_type="text/markdown",
     license="Apache 2.0",
     keywords=["SystemVerilog", "Verilog", "RTL", "cocotb", "Python", "Vivado", "Xilinx", "xsim", "xsi"],
-    url="https://github.com/themperek/cocotb-xsim",
+    url="https://github.com/themperek/cocotb-vivado",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: BSD License",
