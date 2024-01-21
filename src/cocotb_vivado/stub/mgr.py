@@ -1,6 +1,3 @@
-import traceback
-
-import os
 from cocotb_vivado import xsi
 
 MODULE = 0
@@ -101,8 +98,8 @@ class CbClosure(object):
 class Mgr(object):
     _inst = None
 
-    def __init__(self):
-        self.xsim_design = os.environ.get("COCOTB_VIVADO_DESIGN")
+    def __init__(self, xsim_design):
+        self.xsim_design = xsim_design
 
         self.cb_d = {}
         self._stop_request = False
@@ -112,6 +109,9 @@ class Mgr(object):
         self.ports = {}
         self.init_ports()
 
+    def get_design_name(self):
+        return self.xsim_design
+    
     def init_ports(self):
         ports_num = self.xsi.ports_number()
         for port_id in range(ports_num):
@@ -168,12 +168,12 @@ class Mgr(object):
     @classmethod
     def inst(cls):
         if cls._inst is None:
-            cls._inst = Mgr()
+            raise Exception("Simulation manager (Mgr) not initialized")
         return cls._inst
 
     @classmethod
-    def init(cls):
-        cls._inst = Mgr()
+    def init(cls, xsim_design):
+        cls._inst = Mgr(xsim_design)
         return cls._inst
 
     # HACK / CHANGE !

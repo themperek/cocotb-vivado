@@ -76,7 +76,7 @@ def get_precision():
 
 
 def get_simulator_product():
-    return "cocotb-xsim-sim "
+    return f"cocotb-vivado-sim with design {Mgr.inst().get_design_name()}"
 
 
 def get_simulator_version():
