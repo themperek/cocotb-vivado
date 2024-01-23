@@ -7,6 +7,8 @@ from cocotb.triggers import Timer
 import cocotb
 from cocotb.binary import BinaryValue
 
+import pytest
+
 
 async def on_edge(signal, timer):
     prev = signal.value
@@ -47,14 +49,37 @@ async def cocotb_tb_test(dut):
         assert (v * 100).lower() == vec_out.binstr
 
 
-def test_tb():
+@cocotb.test()
+async def cocotb_tb_test_fail(dut):
+    await Timer(10, "ns")
+    assert 1 == 0
+
+
+def run_tb(module="test_tb"):
     src_path = pathlib.Path(__file__).parent.absolute()
 
     if not os.path.exists("xsim.dir/work.tb/xsimk.so"):
         subprocess.run(["xvlog", src_path / "tb.v"])
         subprocess.run(["xelab", "work.tb", "-dll"])
 
-    run(module="test_tb", xsim_design="xsim.dir/work.tb/xsimk.so", top_level_lang="verilog")
+    run(module=module, xsim_design="xsim.dir/work.tb/xsimk.so", top_level_lang="verilog")
+
+
+def test_tb():
+    os.environ["TESTCASE"] = "cocotb_tb_test"
+    run_tb()
+
+
+@pytest.mark.xfail
+def test_tb_fail():
+    os.environ["TESTCASE"] = "cocotb_tb_test_fail"
+    run_tb()
+
+
+@pytest.mark.xfail
+def test_tb_fail_init():
+    os.environ["TESTCASE"] = "cocotb_tb_test"
+    run_tb(module="no_exisitng")
 
 
 if __name__ == "__main__":

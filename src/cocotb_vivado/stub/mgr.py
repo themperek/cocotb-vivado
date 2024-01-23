@@ -111,7 +111,7 @@ class Mgr(object):
 
     def get_design_name(self):
         return self.xsim_design
-    
+
     def init_ports(self):
         ports_num = self.xsi.ports_number()
         for port_id in range(ports_num):

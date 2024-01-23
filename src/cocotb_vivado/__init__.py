@@ -17,12 +17,11 @@ def run(module, xsim_design, top_level_lang):
 
     mgr = Mgr.init(xsim_design)
 
-    try:
-        cocotb._initialise_testbench([])
-    except Exception as e:
-        print("Exception: %s" % str(e), flush=True)
-        traceback.print_exc()
+    cocotb._initialise_testbench([])
 
     mgr.run()
 
     mgr.close()
+
+    if cocotb.regression_manager.failures:
+        exit(1)
