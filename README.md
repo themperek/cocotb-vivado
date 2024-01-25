@@ -1,6 +1,6 @@
 # cocotb-vivado
 
-A very limited [cocotb](https://github.com/cocotb/cocotb/) interface to the [Xilinx Vivado Simulator](https://docs.xilinx.com/v/u/en-US/dh0010-vivado-simulation-hub) simulator. 
+A limited Python/[cocotb](https://github.com/cocotb/cocotb/) interface to the [Xilinx Vivado Simulator](https://docs.xilinx.com/v/u/en-US/dh0010-vivado-simulation-hub) simulator. 
 Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
 
 ## The project is at a proof of concept stage
@@ -10,7 +10,7 @@ Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
 - Setting signal values is immediate, as one would use `setimmediatevalue`. 
 - Only `Verilog` at the top level is supported (to do).
 
-## Install 
+## Installation
 
 ```cmd
 pip install cocotb-vivado
