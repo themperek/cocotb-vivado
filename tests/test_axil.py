@@ -6,7 +6,6 @@ import pathlib
 import cocotb
 from cocotb.triggers import Timer
 
-
 class OnFallingSignal:
     def __init__(self, signal):
         self.signal = signal
@@ -20,7 +19,7 @@ class OnFallingSignal:
         while True:
             await self.timer
             now = self.signal.value
-            if prev == 1 and now == 0:
+            if prev.is_resolvable and now.is_resolvable and prev == 1 and now == 0:
                 break
             prev = now
 
@@ -34,11 +33,11 @@ class OnRisingSignal:
         return self._async_method().__await__()
 
     async def _async_method(self):
-        prev = self.signal.value
+        prev = self.signal.value.binstr
         while True:
             await self.timer
-            now = self.signal.value
-            if prev == 0 and now == 1:
+            now = self.signal.value.binstr
+            if  prev != "0" and now == "1":
                 break
             prev = now
 

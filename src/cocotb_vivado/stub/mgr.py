@@ -74,8 +74,9 @@ class XsimRootHandle(object):
             yield self.mgr.ports[name]
 
     def get_handle_by_name(self, name):
+        print(self.mgr.ports)
         if name not in self.mgr.ports:
-            raise Exception(f"Port {name} does not exit!")
+            return
 
         return self.mgr.ports[name]
 
