@@ -1,4 +1,5 @@
 # cocotb-vivado
+[![PyPI version](https://badge.fury.io/py/cocotb-vivado.svg)](https://pypi.org/project/cocotb-vivado/)
 
 A limited Python/[cocotb](https://github.com/cocotb/cocotb/) interface to the [Xilinx Vivado Simulator](https://docs.xilinx.com/v/u/en-US/dh0010-vivado-simulation-hub) simulator. 
 Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
