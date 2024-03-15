@@ -6,9 +6,9 @@ Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
 
 ## The project is at a proof of concept stage
 
-- Only top-level ports are accessible.
-- It supports the `Timer` trigger.
-- Setting signal values is immediate, as one would use `setimmediatevalue`. 
+- Only top-level ports are accessible (simulator limitation).
+- It supports the `Timer` trigger (simulator limitation).
+- Setting signal values is immediate, as one would use `setimmediatevalue` (simulator limitation). 
 - Only `Verilog` at the top level is supported (to do).
 
 ## Installation
