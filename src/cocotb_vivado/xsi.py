@@ -11,10 +11,12 @@ class XSI:
 
     status = {1: "xsiNormal", 2: "xsiError", 3: "xsiFatalError"}
 
+    # API has change without notice ~2023.1 (xsimDir was added)
     class xsi_setup_info(ctypes.Structure):
         _fields_ = [
             ("logFileName", ctypes.c_char_p),
             ("wdbFileName", ctypes.c_char_p),
+            ("xsimDir", ctypes.c_char_p),
         ]
 
     class s_xsi_vlog_logicval(ctypes.Structure):
@@ -27,7 +29,7 @@ class XSI:
         self.xsi_lib = ctypes.cdll.LoadLibrary(xsim_design)
         self.init_func_definitions()
 
-        self.xsi_handle = self.open()
+        self.xsi_handle = self.open(xsim_dir="")
 
         if tracefile is not None:
             self.xsi_lib.xsi_trace_all(self.xsi_handle)
@@ -82,8 +84,8 @@ class XSI:
         self.xsi_lib.xsi_get_status.argtypes = [ctypes.c_void_p]
         self.xsi_lib.xsi_get_status.restype = ctypes.c_int32
 
-    def open(self, wdb_file="xsi.wdb", log="xsi.log"):
-        info = XSI.xsi_setup_info(logFileName=log.encode("utf-8"), wdbFileName=wdb_file.encode("utf-8"))
+    def open(self, xsim_dir, wdb_file="xsi.wdb", log="xsi.log"):
+        info = XSI.xsi_setup_info(logFileName=log.encode("utf-8"), wdbFileName=wdb_file.encode("utf-8"), xsimDir=xsim_dir.encode("utf-8"))
         return self.xsi_lib.xsi_open(ctypes.byref(info))
 
     @lru_cache(maxsize=None)

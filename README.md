@@ -14,7 +14,8 @@ Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
 ## Installation
 
 ```cmd
-pip install cocotb-vivado
+pip install cocotb-vivado==0.0.3 (for VIVADO <= 2022.2)
+pip install cocotb-vivado (for VIVADO >= 2023.1)
 ```
 
 ## Usage
@@ -26,6 +27,8 @@ source ../Vivado/202X.X/settings64.sh
 export LD_LIBRARY_PATH=$XILINX_VIVADO/lib/lnx64.o
 pytest -s
 ```
+
+Extra future: One does not need to recompile the project when running/changing tests .
 
 ### Acknowledgment
 
