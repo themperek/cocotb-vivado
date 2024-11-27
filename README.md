@@ -10,6 +10,7 @@ Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
 - It supports the `Timer` trigger (simulator limitation).
 - Setting signal values is immediate, as one would use `setimmediatevalue` (simulator limitation). 
 - Only `Verilog` at the top level is supported (to do).
+- Direct access to `XSI` interface
 
 ## Installation
 
