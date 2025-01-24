@@ -37,7 +37,7 @@ class OnRisingSignal:
         while True:
             await self.timer
             now = self.signal.value.binstr
-            if  prev != "0" and now == "1":
+            if  prev == "0" and now == "1":
                 break
             prev = now
 
