@@ -87,7 +87,7 @@ proc create_root_design { parentCell } {
 
 
   # Create instance: axi_fifo_mm_s_0, and set properties
-  set axi_fifo_mm_s_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_fifo_mm_s:4.2 axi_fifo_mm_s_0 ]
+  set axi_fifo_mm_s_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_fifo_mm_s:4.3 axi_fifo_mm_s_0 ]
   set_property -dict [list \
     CONFIG.C_USE_RX_DATA {1} \
     CONFIG.C_USE_TX_CTRL {0} \
@@ -142,8 +142,8 @@ create_root_design ""
 set wrapper_file [make_wrapper -files [get_files -filter {FILE_TYPE == "Block Designs"}] -top -import]
 set_property top fw_wrapper [current_fileset -simset]
 
-update_compile_order -fileset [current_fileset]
-set_property -name {xsim.elaborate.xelab.more_options} -value {-dll} -objects [current_fileset -simset]
+# update_compile_order -fileset [current_fileset]
+# set_property -name {xsim.elaborate.xelab.more_options} -value {-dll} -objects [current_fileset -simset]
 
 launch_simulation -absolute_path  -scripts_only
 
