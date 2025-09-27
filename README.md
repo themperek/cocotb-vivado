@@ -4,19 +4,48 @@
 A limited Python/[cocotb](https://github.com/cocotb/cocotb/) interface to the [Xilinx Vivado Simulator](https://docs.xilinx.com/v/u/en-US/dh0010-vivado-simulation-hub) simulator. 
 Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
 
-## The project is at a proof of concept stage
+---
 
-- Only top-level ports are accessible (simulator limitation).
-- It supports the `Timer` trigger (simulator limitation).
-- Setting signal values is immediate, as one would use `setimmediatevalue` (simulator limitation). 
-- Only `Verilog` at the top level is supported (to do).
-- Direct access to `XSI` interface
+## 🚧 Project Status
+**Proof of Concept** – expect limitations (see below).  
+
+- Only top-level ports are accessible (simulator limitation).  
+- Only the `Timer` trigger is supported (simulator limitation).  
+- Setting signal values is immediate (`setimmediatevalue` behavior).  
+- Only **Verilog top-levels** are supported (VHDL support planned).  
+- Direct access to the **XSI interface** is available.  
+
+---
 
 ## Installation
 
 ```cmd
 pip install cocotb-vivado==0.0.3 (for VIVADO <= 2022.2)
 pip install cocotb-vivado (for VIVADO >= 2023.1)
+```
+
+## Quickstart
+
+```python
+import subprocess
+
+import cocotb_vivado
+import cocotb
+from cocotb.triggers import Timer
+
+@cocotb.test()
+async def simple_test(dut):
+    dut.clk.value = 0
+    await Timer(10, units="ns")
+    dut.clk.value = 1
+    await Timer(10, units="ns")
+    assert dut.out.value == 1
+
+def test_simple():
+    subprocess.run(["xvlog", src_path / "tb.v"])
+    subprocess.run(["xelab", "work.tb", "-dll"])
+
+    cocotb_vivado.run(module="test_simple", xsim_design="xsim.dir/work.tb/xsimk.so", top_level_lang="verilog")
 ```
 
 ## Usage
@@ -30,6 +59,24 @@ pytest -s
 ```
 
 Extra future: One does not need to recompile the project when running/changing tests .
+
+# Direct `XSI` interface 
+
+You can use XSI interface directly see `tests/test_xsi.py` for an example.
+
+# cocotb extension
+
+In order to use cocotb extension like [cocotbext-axi](https://github.com/alexforencich/cocotbext-axi)  one needs to mock the triggers (`XSI` limitations) by creating global clock timer and synchronizes all trigger events to it. See `tests/test_axil.py` for an example.
+
+# Dump waveforms
+
+You can dump `vcd` file with verilog syntax in your testbench:
+```
+initial begin
+    $dumpfile("test.vcd");
+    $dumpvars(0);
+end
+```
 
 ### Acknowledgment
 
