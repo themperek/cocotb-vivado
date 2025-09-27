@@ -74,7 +74,7 @@ class XsimRootHandle(object):
             yield self.mgr.ports[name]
 
     def get_handle_by_name(self, name):
-        print(self.mgr.ports)
+        # print(self.mgr.ports)
         if name not in self.mgr.ports:
             return
 

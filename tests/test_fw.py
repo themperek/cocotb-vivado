@@ -80,11 +80,6 @@ async def cocotb_fw_test(dut):
 
     dut.areset.value = 0
 
-
-import pytest
-
-
-@pytest.mark.skip(reason="FW test is skipped in pytest by default")
 def test_fw():
     src_path = pathlib.Path(__file__).parent.absolute()
 
