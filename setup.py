@@ -6,8 +6,8 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="cocotb-vivado",
-    version="0.0.4",
-    install_requires=["cocotb>=1.7,<=1.8"],
+    version="0.0.5",
+    install_requires=["cocotb>=1.8,<2.0"],
     packages=find_packages(where="./src"),
     package_dir={"": "src"},
     author="Tomasz Hemperek",

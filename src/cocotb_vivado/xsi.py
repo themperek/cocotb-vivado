@@ -85,7 +85,9 @@ class XSI:
         self.xsi_lib.xsi_get_status.restype = ctypes.c_int32
 
     def open(self, xsim_dir, wdb_file="xsi.wdb", log="xsi.log"):
-        info = XSI.xsi_setup_info(logFileName=log.encode("utf-8"), wdbFileName=wdb_file.encode("utf-8"), xsimDir=xsim_dir.encode("utf-8"))
+        info = XSI.xsi_setup_info(
+            logFileName=log.encode("utf-8"), wdbFileName=wdb_file.encode("utf-8"), xsimDir=xsim_dir.encode("utf-8")
+        )
         return self.xsi_lib.xsi_open(ctypes.byref(info))
 
     @lru_cache(maxsize=None)
