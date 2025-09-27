@@ -2,6 +2,7 @@ from cocotb_vivado import run
 import subprocess
 import os
 import pathlib
+import shutil
 
 from cocotb.triggers import Timer
 import cocotb
@@ -10,7 +11,7 @@ from cocotb.binary import BinaryValue
 import pytest
 
 
-async def on_edge(signal, timer):
+async def on_signal(signal, timer):
     prev = signal.value
     while True:
         await timer
@@ -21,12 +22,12 @@ async def on_edge(signal, timer):
 
 
 async def clock(signal, timer):
-    signal.setimmediatevalue(0)
+    signal.value = 0
     while True:
         await timer
-        signal.setimmediatevalue(1)
+        signal.value = 1
         await timer
-        signal.setimmediatevalue(0)
+        signal.value = 0
 
 
 @cocotb.test()
@@ -36,7 +37,7 @@ async def cocotb_tb_test(dut):
     await Timer(10, "ns")
 
     for _ in range(10):
-        await on_edge(dut.out, Timer(1, "ns"))
+        await on_signal(dut.out, Timer(1, "ns"))
         cocotb.log.info(f"out={dut.out.value}")
 
     await Timer(100, "ns")
@@ -57,6 +58,8 @@ async def cocotb_tb_test_fail(dut):
 
 def run_tb(module="test_tb"):
     src_path = pathlib.Path(__file__).parent.absolute()
+
+    shutil.rmtree("xsim.dir", ignore_errors=True)
 
     if not os.path.exists("xsim.dir/work.tb/xsimk.so"):
         subprocess.run(["xvlog", src_path / "tb.v"])
