@@ -83,16 +83,18 @@ async def cocotb_fw_test(dut):
 def test_fw():
     src_path = pathlib.Path(__file__).parent.absolute()
 
-    # shutil.rmtree("fw", ignore_errors=True)
+    shutil.rmtree("fw", ignore_errors=True)
     if not os.path.exists("fw/fw.xpr"):
         subprocess.run(["vivado", "-nolog", "-mode", "tcl", "-source", src_path / "fw.tcl"])
 
     shutil.rmtree("xsim.dir", ignore_errors=True)
     if not os.path.exists("xsim.dir/fw_wrapper/xsimk.so"):
-        subprocess.run(["./fw/sim_export/xsim/fw_wrapper.sh", "-step", "compile"])
+        subprocess.run(["xvlog", "-prj", f"{src_path}/fw/sim_export/xsim/vlog.prj"])
+        subprocess.run(["xvhdl", "-prj", f"{src_path}/fw/sim_export/xsim/vhdl.prj"])
         subprocess.run(["./fw/sim_export/xsim/fw_wrapper.sh", "-step", "elaborate"])
 
     run(module="test_fw", xsim_design="xsim.dir/fw_wrapper/xsimk.so", top_level_lang="verilog")
+
 
 
 if __name__ == "__main__":

@@ -142,29 +142,10 @@ create_root_design ""
 set wrapper_file [make_wrapper -files [get_files -filter {FILE_TYPE == "Block Designs"}] -top -import]
 set_property top fw_wrapper [current_fileset -simset]
 
-# update_compile_order -fileset [current_fileset]
 set_property -name {xsim.elaborate.xelab.more_options} -value {--dll} -objects [current_fileset -simset]
 
 # launch_simulation -absolute_path  -scripts_only -install_path xsim
 export_simulation -directory fw/sim_export -absolute_path -simulator xsim -force 
-
-# 
-# Fix realtive paths
-#
-set sim_script "fw/sim_export/xsim/fw_wrapper.sh"
-
-set f [open $sim_script r]
-set data [read $f]
-close $f
-
-set pwd [pwd]
-regsub -all {\-prj vlog\.prj} $data "-prj ${pwd}/fw/sim_export/xsim/vlog.prj" newdata
-regsub -all {\-prj vhdl\.prj} $newdata "-prj ${pwd}/fw/sim_export/xsim/vhdl.prj" newdata
-
-set f [open $sim_script w]
-puts $f $newdata
-close $f
-
 
 close_project
 exit
