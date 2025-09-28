@@ -42,11 +42,13 @@ async def simple_test(dut):
     assert dut.out.value == 1
 
 def test_simple():
-    subprocess.run(["xvlog", src_path / "tb.v"])
+    subprocess.run(["xvlog", "tb.v"])
     subprocess.run(["xelab", "work.tb", "-dll"])
 
     cocotb_vivado.run(module="test_simple", xsim_design="xsim.dir/work.tb/xsimk.so", top_level_lang="verilog")
 ```
+
+See `testes/test_simple.py` for full example.
 
 ## Usage
 
