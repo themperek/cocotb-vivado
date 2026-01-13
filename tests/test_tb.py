@@ -4,8 +4,9 @@ import os
 import pathlib
 import shutil
 
-from cocotb.triggers import Timer
 import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import Edge, Timer
 from cocotb.binary import BinaryValue
 
 import pytest
@@ -21,24 +22,18 @@ async def on_signal(signal, timer):
         prev = now
 
 
-async def clock(signal, timer):
-    signal.value = 0
-    while True:
-        await timer
-        signal.value = 1
-        await timer
-        signal.value = 0
-
-
 @cocotb.test()
 async def cocotb_tb_test(dut):
-    cocotb.start_soon(clock(dut.clk, Timer(5, "ns")))
+    clk = Clock(dut.clk, 5, units="ns")
+    cocotb.start_soon(clk.start(start_high=False))
 
     await Timer(10, "ns")
 
+    expected_out_transitions = ["0", "1"] * 5
     for _ in range(10):
         await on_signal(dut.out, Timer(1, "ns"))
         cocotb.log.info(f"out={dut.out.value}")
+        assert expected_out_transitions.pop(0) == dut.out.value.binstr
 
     await Timer(100, "ns")
 
