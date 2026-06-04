@@ -1,6 +1,11 @@
 import ctypes
 from functools import cache
 
+# IEEE std_logic 9-state alphabet, indexed by the byte XSI returns
+# for ``vhdl`` top-level ports. Mirrors UG900's encoding.
+_VHDL_STD_LOGIC = ("U", "X", "0", "1", "Z", "W", "L", "H", "-")
+_VHDL_BINSTR_TO_BYTE = {ch: idx for idx, ch in enumerate(_VHDL_STD_LOGIC)}
+
 
 class XSI:
     xsiNumTopPorts = 1
@@ -25,7 +30,18 @@ class XSI:
             ("bVal", ctypes.c_uint32),
         ]
 
-    def __init__(self, xsim_design, tracefile=None, wdb_file=None):
+    def __init__(
+        self,
+        xsim_design,
+        tracefile=None,
+        wdb_file=None,
+        toplevel_lang="verilog",
+    ):
+        if toplevel_lang not in ("verilog", "vhdl"):
+            raise ValueError(
+                f"XSI toplevel_lang must be 'verilog' or 'vhdl', got {toplevel_lang!r}"
+            )
+        self.toplevel_lang = toplevel_lang
         self.xsi_lib = ctypes.cdll.LoadLibrary(xsim_design)
         self.init_func_definitions()
 
@@ -102,8 +118,21 @@ class XSI:
         ).decode("utf-8")
 
     def put_value(self, port_id, value):
-        vlog_val = self._binstr_to_vlog_logicval(value)
-        self.xsi_lib.xsi_put_value(self.xsi_handle, port_id, vlog_val)
+        if self.toplevel_lang == "vhdl":
+            space = self._binstr_to_vhdl_space(value)
+        else:
+            space = self._binstr_to_vlog_logicval(value)
+        self.xsi_lib.xsi_put_value(self.xsi_handle, port_id, space)
+
+    def get_value(self, port_id):
+        size = self.get_port_size(port_id)
+        if self.toplevel_lang == "vhdl":
+            space = (ctypes.c_char * size)()
+            self.xsi_lib.xsi_get_value(self.xsi_handle, port_id, space)
+            return self._vhdl_space_to_binstr(space, size)
+        vlog_val = (XSI.s_xsi_vlog_logicval * ((size // 32) + 1))()
+        self.xsi_lib.xsi_get_value(self.xsi_handle, port_id, vlog_val)
+        return self._vlog_logicval_binstr_to(vlog_val, size)
 
     @cache
     def _binstr_to_vlog_logicval(self, value):
@@ -127,13 +156,8 @@ class XSI:
 
         return vlog_val
 
-    def get_value(self, port_id):
-        size = self.get_port_size(port_id)
-        vlog_val = (XSI.s_xsi_vlog_logicval * ((size // 32) + 1))()
-        self.xsi_lib.xsi_get_value(self.xsi_handle, port_id, vlog_val)
-        return self._vlog_logicval_binstr_to(vlog_val, size)
-
-    def _vlog_logicval_binstr_to(self, vlog_val, size):
+    @staticmethod
+    def _vlog_logicval_binstr_to(vlog_val, size):
         value = ["0"] * size
 
         i = 0
@@ -158,6 +182,26 @@ class XSI:
             i += 1
 
         return "".join(value)
+
+    @staticmethod
+    def _binstr_to_vhdl_space(value):
+        """One byte per bit, MSB first, mapped to the 9-state alphabet."""
+        size = len(value)
+        space = (ctypes.c_char * size)()
+        for idx, ch in enumerate(value):
+            byte = _VHDL_BINSTR_TO_BYTE.get(ch.upper())
+            if byte is None:
+                raise ValueError(
+                    f"Cannot encode {ch!r} as std_logic; expected one of "
+                    f"{''.join(_VHDL_STD_LOGIC)}"
+                )
+            space[idx] = bytes([byte])
+        return space
+
+    @staticmethod
+    def _vhdl_space_to_binstr(space, size):
+        """MSB-first 9-state characters, one per byte read from XSI."""
+        return "".join(_VHDL_STD_LOGIC[ord(space[i])] for i in range(size))
 
     @cache
     def get_port_size(self, port_id):

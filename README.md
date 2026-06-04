@@ -25,8 +25,9 @@ Known limitations:
   advances time (`Timer` / `cocotb.clock.Clock`). Verilog `#` delays are
   not visible to those triggers, so awaiting an edge on a DUT-driven
   clock with no concurrent Python-driven time advance will not progress.
-- VHDL top-level support is in progress; today's release runs Verilog
-  tops cleanly and accepts VHDL sources.
+- Waveform dump via `$dumpfile` / `$dumpvars` is Verilog-only and
+  cannot hook into a VHDL top; with a VHDL top, only the Vivado WDB
+  output (`wave_format="wdb"`) is available.
 - Direct access to the **XSI interface** via `cocotb_vivado.xsi` is
   available for low-level tooling.
 

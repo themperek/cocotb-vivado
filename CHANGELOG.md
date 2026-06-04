@@ -78,6 +78,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   so cocotb's stock `RisingEdge` / `FallingEdge` / `Edge` triggers work
   on any signal, not just Python-driven `Clock`s. Split out of the
   former `stub.mgr`.
+- VHDL top-level support. `hdl_toplevel_lang="vhdl"` elaborates a VHDL
+  top; the XSI value bridge encodes/decodes `std_logic` via its 9-state
+  representation. Waveform dump via `$dumpfile` / `$dumpvars` is
+  Verilog-only, so a VHDL top supports only `wave_format="wdb"`.
 - `wdb_file` kwarg threaded through `xsi.XSI.__init__` and
   `stub.manager.Mgr.init`, so the WDB output path can be set explicitly
   by the runner instead of defaulting to `xsi.wdb` in the cwd.

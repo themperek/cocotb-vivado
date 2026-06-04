@@ -39,9 +39,12 @@ from .handles import (
 class Mgr:
     _inst = None
 
-    def __init__(self, xsim_design, wdb_file=None):
+    def __init__(self, xsim_design, wdb_file=None, toplevel_lang="verilog"):
         self.xsim_design = xsim_design
-        self.xsi = xsi.XSI(self.xsim_design, wdb_file=wdb_file)
+        self.toplevel_lang = toplevel_lang
+        self.xsi = xsi.XSI(
+            self.xsim_design, wdb_file=wdb_file, toplevel_lang=toplevel_lang
+        )
 
         self.ports = {}
         self.init_ports()
@@ -211,8 +214,8 @@ class Mgr:
         return cls._inst
 
     @classmethod
-    def init(cls, xsim_design, wdb_file=None):
-        cls._inst = Mgr(xsim_design, wdb_file=wdb_file)
+    def init(cls, xsim_design, wdb_file=None, toplevel_lang="verilog"):
+        cls._inst = Mgr(xsim_design, wdb_file=wdb_file, toplevel_lang=toplevel_lang)
         return cls._inst
 
     @classmethod

@@ -36,7 +36,10 @@ from .stub.manager import Mgr  # noqa: E402
 def _initialize_simulator(
     argv_: list[str], xsim_design: str, wdb_file: str | None = None
 ) -> None:
-    mgr = Mgr.init(xsim_design, wdb_file=wdb_file)  # type: ignore[no-untyped-call]
+    toplevel_lang = os.getenv("TOPLEVEL_LANG", "verilog")
+    mgr = Mgr.init(  # type: ignore[no-untyped-call]
+        xsim_design, wdb_file=wdb_file, toplevel_lang=toplevel_lang
+    )
     cocotb._initialise_testbench([])
     mgr.run()
     mgr.close()
