@@ -13,9 +13,9 @@ handle, keyed by the numeric ``port_id`` from xsi's native API.
 :class:`XsimRootHandle` wraps the design root for cocotb's name-based
 lookup.
 
-cocotb 1.x type-tag conventions:
-  MODULE = 0 — top-level scope handle
-  REG    = 2 — wire/reg handle
+Type tags come from :mod:`cocotb_vivado._gpi_enums`, matching cocotb
+2.x's GPI shim expectations. Single-bit ports report ``LOGIC``;
+wider ports ``LOGIC_ARRAY``; the top-level scope reports ``MODULE``.
 
 :class:`ValueChangeCbClosure` caches the last observed signal value
 and fires its user callback on the next read whose value satisfies
@@ -28,8 +28,7 @@ import abc
 from collections.abc import Callable
 from typing import Any
 
-MODULE = 0
-REG = 2
+from cocotb_vivado import _gpi_enums as _enums
 
 
 class XsimRootHandle:
@@ -40,7 +39,7 @@ class XsimRootHandle:
         return True
 
     def get_type(self):
-        return MODULE
+        return _enums.MODULE
 
     def get_name_string(self):
         return "top"
@@ -58,7 +57,7 @@ class XsimRootHandle:
         for name in self.mgr.ports:
             yield self.mgr.ports[name]
 
-    def get_handle_by_name(self, name):
+    def get_handle_by_name(self, name, discovery_method=1):
         if name not in self.mgr.ports:
             return
         return self.mgr.ports[name]
@@ -71,17 +70,27 @@ class XsiPortHandle:
         self.size = size
         self.mgr = mgr
 
+        # cocotb 2.x distinguishes single-bit (LOGIC) from multi-bit
+        # (LOGIC_ARRAY) ports; cocotb 1.x's REG covered both. Tag once
+        # at handle creation so get_type() lookups are constant-time.
+        if size == 1:
+            self.type_int = _enums.LOGIC
+            self.type_str = "LOGIC"
+        else:
+            self.type_int = _enums.LOGIC_ARRAY
+            self.type_str = "LOGIC_ARRAY"
+
     def get_const(self):
         return False
 
     def get_type(self):
-        return REG
+        return self.type_int
 
     def get_name_string(self):
         return self.name
 
     def get_type_string(self):
-        return "REG"
+        return self.type_str
 
     def get_definition_name(self):
         return ""
@@ -149,13 +158,16 @@ class ValueChangeCbClosure(CbClosure):
         except ValueError:
             current_value = None
 
-        # RisingEdge=1, FallingEdge=2, Edge (any)=3
-        if self.edge == 1:
-            out = current_value == 1 and self.previous_value in (0, None)
-        elif self.edge == 2:
-            out = current_value == 0 and self.previous_value in (1, None)
+        if self.edge == _enums.RISING:
+            out = (current_value == 1) and (
+                self.previous_value == 0 or self.previous_value is None
+            )
+        elif self.edge == _enums.FALLING:
+            out = (current_value == 0) and (
+                self.previous_value == 1 or self.previous_value is None
+            )
         else:
-            # any change between two known values; X/None is not an edge
+            # VALUE_CHANGE — any genuine transition.
             out = (
                 current_value is not None
                 and self.previous_value is not None
@@ -179,8 +191,6 @@ class ReadOnlyCbClosure(CbClosure):
 
 
 __all__ = [
-    "MODULE",
-    "REG",
     "CbClosure",
     "ReadOnlyCbClosure",
     "ReadWriteCbClosure",

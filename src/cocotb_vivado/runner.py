@@ -35,10 +35,11 @@ import subprocess
 from collections.abc import Mapping, Sequence
 from os import environ
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
-from cocotb import runner
-from cocotb.runner import VHDL, Simulator, Verilog
+from cocotb_tools import runner
+from cocotb_tools.runner import VHDL, Verilog
+from cocotb_tools.runner import Runner as Simulator
 
 from .vivado import VivadoSource
 
@@ -112,7 +113,7 @@ def _save_signature(sig_path: Path, sig: dict) -> None:
     tmp.replace(sig_path)
 
 
-class Vivado(Simulator):  # type: ignore[no-any-unimported]
+class Vivado(Simulator):
     """cocotb Python runner for the Vivado XSim simulator (XSI only)."""
 
     supported_gpi_interfaces = {"verilog": ["xsi"], "vhdl": ["xsi"]}
@@ -137,14 +138,14 @@ class Vivado(Simulator):  # type: ignore[no-any-unimported]
 
     def build(
         self,
-        *args: object,
+        *args: Any,
         wave_format: WaveFormat | None = None,
         extra_global_modules: Sequence[str] | None = None,
-        **kwargs: object,
+        **kwargs: Any,
     ) -> None:
         """Build the HDL design with the XSim binaries.
 
-        Accepts every kwarg of :meth:`cocotb.runner.Simulator.build`,
+        Accepts every kwarg of :meth:`cocotb_tools.runner.Runner.build`,
         plus:
 
         Args:
@@ -157,9 +158,9 @@ class Vivado(Simulator):  # type: ignore[no-any-unimported]
                 to elaborate (e.g. user-supplied ``glbl`` shims).
                 Forwarded to ``xelab`` after the design top.
 
-        ``sources=[...]`` may contain plain HDL paths, cocotb's
-        :class:`cocotb.runner.Verilog` / :class:`cocotb.runner.VHDL`
-        tagged paths, or
+        ``sources=[...]`` may contain plain HDL paths,
+        :class:`cocotb_tools.runner.Verilog` /
+        :class:`cocotb_tools.runner.VHDL` tagged paths, or
         :class:`cocotb_vivado.vivado.VivadoSource` instances
         (:class:`~cocotb_vivado.vivado.VivadoIp`,
         :class:`~cocotb_vivado.vivado.VivadoProject`,
@@ -198,15 +199,15 @@ class Vivado(Simulator):  # type: ignore[no-any-unimported]
 
     def test(
         self,
-        *args: object,
+        *args: Any,
         wave_format: WaveFormat | None = None,
-        **kwargs: object,
-    ) -> None:
+        **kwargs: Any,
+    ) -> Path:
         """Run the cocotb test. ``wave_format``: same semantics as in :meth:`build`."""
         if wave_format is not None:
             self.wave_format = self._resolve_wave_format(wave_format)
             kwargs.setdefault("waves", True)
-        super().test(*args, **kwargs)
+        result = super().test(*args, **kwargs)
         if not self.waves:
             # XSI always writes a waveform DB on open (default name
             # ``xsi.wdb``); with no waves requested it holds only the
@@ -214,6 +215,7 @@ class Vivado(Simulator):  # type: ignore[no-any-unimported]
             # only real, traced captures — the ``<snapshot>.wdb`` a
             # ``waves=True`` run produces.
             (self.build_dir / "xsi.wdb").unlink(missing_ok=True)
+        return result
 
     # ------------------------------------------------------------------
     # Simulator-binary contract
@@ -272,13 +274,16 @@ class Vivado(Simulator):  # type: ignore[no-any-unimported]
 
         for raw_source in self.sources:
             source = Path(raw_source)
-            if runner.is_verilog_source(source):
+            # cocotb 2.x dropped runner.is_verilog_source / is_vhdl_source;
+            # dispatch by extension instead.
+            suffix = source.suffix.lower()
+            if suffix in (".v", ".sv", ".vh", ".svh"):
                 cmds.append(
                     self._compile_cmd(source, "verilog")
                     + define_args
                     + verilog_build_args
                 )
-            elif runner.is_vhdl_source(source):
+            elif suffix in (".vhd", ".vhdl"):
                 cmds.append(
                     self._compile_cmd(source, "vhdl") + define_args + vhdl_build_args
                 )
@@ -451,6 +456,13 @@ class Vivado(Simulator):  # type: ignore[no-any-unimported]
             out.extend(["-d", f"{key}={val}"])
         return out
 
+    def _get_define_options(self, defines: Mapping[str, object]) -> Command:
+        """Abstract in cocotb 2.x's Runner. ``_define_args`` already
+        materializes defines onto the xvlog command line — return empty
+        here so the base class's contract is satisfied without double
+        work."""
+        return []
+
     def _get_parameter_options(self, parameters: Mapping[str, object]) -> Command:
         out: Command = []
         for name, value in parameters.items():
@@ -458,7 +470,7 @@ class Vivado(Simulator):  # type: ignore[no-any-unimported]
         return out
 
     @staticmethod
-    def _get_include_options(includes: Sequence[Path]) -> Command:
+    def _get_include_options(includes: Sequence[os.PathLike[str] | str]) -> Command:
         out: Command = []
         for incl in includes:
             out.extend(["-i", str(incl)])
@@ -506,11 +518,11 @@ class Vivado(Simulator):  # type: ignore[no-any-unimported]
             )
 
 
-def get_runner(simulator_name: str, **kwargs: object) -> Simulator:  # type: ignore[no-any-unimported]
+def get_runner(simulator_name: str, **kwargs: Any) -> Simulator:
     """``get_runner`` shim that returns the Vivado runner for ``"vivado"``.
 
-    Delegates to :func:`cocotb.runner.get_runner` for any other name so
-    the same factory works for projects that mix simulators.
+    Delegates to :func:`cocotb_tools.runner.get_runner` for any other
+    name so the same factory works for projects that mix simulators.
     """
     if simulator_name == "vivado":
         return Vivado(**kwargs)

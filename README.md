@@ -64,9 +64,9 @@ from cocotb_vivado.runner import get_runner
 @cocotb.test()
 async def simple_test(dut):
     dut.clk.value = 0
-    await Timer(10, units="ns")
+    await Timer(10, unit="ns")
     dut.clk.value = 1
-    await Timer(10, units="ns")
+    await Timer(10, unit="ns")
     assert dut.out.value == 1
 
 

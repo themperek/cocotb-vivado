@@ -21,18 +21,18 @@ from cocotb_vivado.stub.manager import Mgr
 
 @cocotb.test()
 async def clock_edges_advance(dut):
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start(start_high=False))
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start(start_high=False))
 
     # tog toggles once per rising clk edge; confirm RisingEdge(clk) fires
     # repeatedly (re-registered inline each iteration) and the DUT
     # advances in lockstep.
     await RisingEdge(dut.clk)
-    await Timer(1, units="ns")  # let the non-blocking assignment settle
+    await Timer(1, unit="ns")  # let the non-blocking assignment settle
     prev = int(dut.tog.value)
     toggles = 0
     for _ in range(6):
         await RisingEdge(dut.clk)
-        await Timer(1, units="ns")
+        await Timer(1, unit="ns")
         cur = int(dut.tog.value)
         toggles += int(cur != prev)
         prev = cur
@@ -41,7 +41,7 @@ async def clock_edges_advance(dut):
 
 @cocotb.test()
 async def edges_on_a_data_signal(dut):
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start(start_high=False))
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start(start_high=False))
 
     # tog: 0 -> 1 -> 0 -> 1 ... on successive rising clk edges. Both a
     # falling and a rising edge of the data signal must fire.
@@ -53,7 +53,7 @@ async def edges_on_a_data_signal(dut):
 
 @cocotb.test()
 async def edge_fires_on_rise_and_fall(dut):
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start(start_high=False))
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start(start_high=False))
 
     # Tests share the DUT (no reset; sim time is cumulative), so tog's
     # polarity at entry is whatever a prior test left. Land on a known
@@ -75,18 +75,18 @@ async def vcqueue_drops_deregistered_closures(dut):
     # ever firing it; deregister only sets cb=None. Such dead closures must
     # not pile up on the manager's _vcqueue — retaining them grows the queue
     # every cycle and makes the run quadratic in simulated time.
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start(start_high=False))
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start(start_high=False))
 
     queue = Mgr.inst()._vcqueue
     for _ in range(50):
         # 1 ns < the 10 ns period, so the Timer always wins and the edge
         # closure is unprimed having never fired.
-        await First(Timer(1, units="ns"), RisingEdge(dut.clk))
+        await First(Timer(1, unit="ns"), RisingEdge(dut.clk))
         await RisingEdge(dut.clk)
 
     # Land on a timed resume so the last dispatch's phase-3 sweep has run
     # before we inspect (an edge resumes us mid-dispatch, before the sweep).
-    await Timer(1, units="ns")
+    await Timer(1, unit="ns")
 
     dead = [c for c in queue if c.cb is None]
     assert not dead, f"{len(dead)} deregistered closures left on _vcqueue"

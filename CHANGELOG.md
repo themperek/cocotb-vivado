@@ -111,6 +111,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Requires cocotb >= 2.0.** cocotb 1.x is no longer supported. The GPI
+  shim now targets cocotb 2.x's pygpi interface — integer type / edge
+  tags come from `cocotb_vivado._gpi_enums` and the runner subclasses
+  `cocotb_tools.runner`.
 - **Edge triggers now observe same-timestep value deposits.** The
   value-change manager samples signals *after* cocotb applies its
   scheduled writes, so a signal written in the same timestep as a clock
@@ -119,9 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value, so a testbench that releases reset exactly on a clock edge now
   counts one cycle later. See [MIGRATION.md](MIGRATION.md).
 - `tests/test_simple.py` and `tests/test_tb.py` rewritten on top of
-  `cocotb_vivado.runner.get_runner()`. Their legacy
-  `cocotb_vivado.run()`-based variants stay available but are
-  skip-gated behind `COCOTB_VIVADO_TEST_DIRECT=1`.
+  `cocotb_vivado.runner.get_runner()`.
 - `tests/test_axil.py` migrated to the new runner (RTL only, no
   Vivado source). Skip gate removed.
 - `tests/test_fw.py` migrated to the new runner via `VivadoProject(
@@ -131,9 +133,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   property are dropped; the runner adds `-dll` on its xelab
   invocation and the script extraction is now `VivadoProject`'s
   responsibility.
-- `tests/test_xsi.py` remains skip-gated behind
-  `COCOTB_VIVADO_TEST_DIRECT=1` — it is a low-level XSI ctypes
-  smoke test rather than a runner-based simulation.
 - `setup.py` reduced to a thin shim; project metadata moved to the
   `[project]` table in `pyproject.toml`.
 
@@ -144,3 +143,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   callbacks before the value-change manager. The manager now drives
   cocotb's native triggers directly, so the stand-ins (and the rule
   that only Python-driven `Clock`s could raise edges) are gone.
+- `cocotb_vivado.run()` — the cocotb 1.x direct-launch entry point. It
+  called `cocotb._initialise_testbench`, which does not exist in
+  cocotb 2.x. `runner.build()` / `runner.test()` is the only launch
+  path; see MIGRATION.md.
+- The `COCOTB_VIVADO_TEST_DIRECT` skip gate and the
+  `test_simple_directlaunch` test that needed it. Every in-tree test
+  now runs by default.
+- The user-facing import-order rule. `run()` simulated in the calling
+  process, so the XSI stub had to be installed before cocotb was
+  imported; simulations now run in a `python -m cocotb_vivado`
+  subprocess that installs the stub itself, so a testbench may import
+  `cocotb` and `cocotb_vivado` in any order.

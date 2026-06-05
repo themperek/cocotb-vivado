@@ -1,4 +1,4 @@
-"""Shared pytest fixtures and test-session setup.
+"""Shared pytest fixtures.
 
 Per-test ``build_dir`` keeps each test's compile/elab artifacts and
 build signature isolated under ``tests/sim_build/<test_module>/``, so
@@ -6,32 +6,12 @@ the Tier 1 build cache holds across full-suite reruns. Without
 isolation, the suite would share one ``sim_build/`` and each test
 overwrites the previous test's signature, defeating the cache for any
 subsequent suite run.
-
-The ``cocotb_vivado`` import below is TEMPORARY — remove it together
-with the legacy ``cocotb_vivado.run()`` path.
-
-Importing ``cocotb_vivado`` replaces ``cocotb.simulator`` with the
-in-process XSI stub, and cocotb caches the simulator handle at its own
-import time. ``test_simple_directlaunch`` simulates *in this process*,
-so the stub has to be installed before anything imports cocotb.
-
-pytest imports this file before any test module, which makes it the only
-place the ordering can be guaranteed for a whole-suite run: fixing the
-import order inside a single test module is not enough, because an
-earlier-collected module (``test_axil.py``) imports cocotb first. Neither
-``pathlib`` nor ``pytest`` pulls in cocotb, so the import keeps its
-normal isort position here.
-
-Runner-based tests are unaffected either way — they simulate in a
-``python -m cocotb_vivado`` subprocess that controls its own import order.
 """
 
 import ctypes
 from pathlib import Path
 
 import pytest
-
-import cocotb_vivado  # noqa: F401
 
 
 def _xsi_kernel_loadable() -> bool:

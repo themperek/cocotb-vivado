@@ -13,7 +13,7 @@ from cocotb_vivado.runner import get_runner
 
 @cocotb.test()
 async def cocotb_axil_test(dut):
-    clk = Clock(dut.clk, 200, units="ns")
+    clk = Clock(dut.clk, 200, unit="ns")
     cocotb.start_soon(clk.start())
 
     dut.rst.value = 1
