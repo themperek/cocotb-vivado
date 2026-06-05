@@ -28,10 +28,10 @@ async def clocks_only(dut):
     dut.ena.value = 1
     dut.enb.value = 1
 
-    cocotb.start_soon(Clock(dut.clka, 10, units="ns").start())
-    cocotb.start_soon(Clock(dut.clkb, 12, units="ns").start())
+    cocotb.start_soon(Clock(dut.clka, 10, unit="ns").start())
+    cocotb.start_soon(Clock(dut.clkb, 12, unit="ns").start())
 
-    await Timer(200, units="ns")
+    await Timer(200, unit="ns")
 
 
 def test_bram(build_dir):

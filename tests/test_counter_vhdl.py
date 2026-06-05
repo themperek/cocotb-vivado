@@ -23,17 +23,17 @@ from cocotb_vivado.runner import get_runner
 
 @cocotb.test()
 async def counter_vhdl_smoke(dut):
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start(start_high=False))
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start(start_high=False))
 
     dut.rst.value = 1
     # Hold reset until the falling edge of cycle 3 so the next rising
     # edge (the one we want to count from) sees rst=0 unambiguously.
-    await Timer(33, units="ns")
+    await Timer(33, unit="ns")
     dut.rst.value = 0
 
     expected = 0
     for _ in range(8):
-        await Timer(10, units="ns")
+        await Timer(10, unit="ns")
         expected = (expected + 1) & 0xFF
         actual = int(dut.q.value)
         assert actual == expected, (

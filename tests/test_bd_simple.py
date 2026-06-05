@@ -30,7 +30,7 @@ from cocotb_vivado.vivado import VivadoBd
 async def inverter_smoke(dut):
     for value in (0x00, 0xA5, 0xFF, 0x5A):
         dut.data_in.value = value
-        await Timer(10, units="ns")
+        await Timer(10, unit="ns")
         expected = (~value) & 0xFF
         assert int(dut.data_out.value) == expected, (
             f"data_in=0x{value:02x} → data_out=0x{int(dut.data_out.value):02x}, "
