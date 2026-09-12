@@ -143,6 +143,3 @@ vivado*.jou
 fw
 results.xml
 xsim.ini
-
-# setuptools-scm generated version
-src/cocotb_vivado/_version.py

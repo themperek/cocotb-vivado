@@ -25,6 +25,8 @@ With the GPI shim in place, cocotb's native ``Clock`` and
 against the in-process simulator.
 """
 
+__version__ = "0.0.6"
+
 import importlib
 import os
 import sys

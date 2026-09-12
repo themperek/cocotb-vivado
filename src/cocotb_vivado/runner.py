@@ -35,14 +35,14 @@ import subprocess
 from collections.abc import Mapping, Sequence
 from os import environ
 from pathlib import Path
-from typing import Literal, Union
+from typing import Literal
 
 from cocotb import runner
 from cocotb.runner import VHDL, Simulator, Verilog
 
 from .vivado import VivadoSource
 
-PathLike = Union[Path, str]
+PathLike = Path | str
 Command = list[str]
 Timescale = tuple
 

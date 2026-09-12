@@ -27,7 +27,6 @@ import hashlib
 import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Union
 
 from cocotb.runner import outdated
 
@@ -35,7 +34,7 @@ from ._tcl import EXPORT_SCRIPTS_TCL, ensure_xsim_ini, execute_tcl
 from .part import _resolve_part_num
 from .sim_dir import SimDirInfo, read_sim_dir
 
-PathLike = Union[Path, str]
+PathLike = Path | str
 
 
 def _hash_file(path: Path) -> str:

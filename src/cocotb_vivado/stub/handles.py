@@ -26,7 +26,7 @@ the requested edge (rising / falling / any). The manager invokes
 
 import abc
 from collections.abc import Callable
-from typing import Any, Union
+from typing import Any
 
 MODULE = 0
 REG = 2
@@ -112,7 +112,7 @@ class XsiPortHandle:
 
 class CbClosure(abc.ABC):
     def __init__(self) -> None:
-        self.cb: Union[Callable[[Any], None], None] = None
+        self.cb: Callable[[Any], None] | None = None
         self.ud: Any = None
 
     def __call__(self):
