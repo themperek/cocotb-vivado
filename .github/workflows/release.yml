@@ -14,8 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          # Full history + tags so setuptools-scm can derive the version
-          # from the pushed tag (a shallow clone yields 0.0.0).
+          # Full history so ``gh release create --generate-notes`` can
+          # see commits since the previous tag.
           fetch-depth: 0
 
       - uses: actions/setup-python@v6

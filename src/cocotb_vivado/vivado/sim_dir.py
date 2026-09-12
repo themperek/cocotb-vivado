@@ -20,9 +20,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Union
 
-PathLike = Union[Path, str]
+PathLike = Path | str
 
 # Single ``-L <name>`` pair on the xelab command line. Library names are
 # bare identifiers per Xilinx convention.

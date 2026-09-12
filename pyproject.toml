@@ -1,20 +1,20 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "cocotb-vivado"
-dynamic = ["version"]
+version = "0.0.6"
 description = "Limited cocotb/Python interface for Xilinx Vivado Simulator"
 readme = "README.md"
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
     { name = "Tomasz Hemperek", email = "themperek@gmail.com" },
 ]
 keywords = ["SystemVerilog", "Verilog", "RTL", "cocotb", "Python", "Vivado", "Xilinx", "xsim", "xsi"]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: POSIX :: Linux",
     "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
     "Framework :: cocotb",
@@ -26,22 +26,6 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/themperek/cocotb-vivado"
-
-[tool.setuptools_scm]
-# Version is derived from the latest git tag (e.g. ``v0.1.0``), so a
-# GitHub release/tag is the single source of truth. The resolved version
-# is written into the package at build time (``_version.py``) so built
-# wheels/sdists carry it without git; ``.git_archival.txt`` +
-# ``.gitattributes`` let a ``git archive`` tarball (what GitHub generates
-# for a release) carry it too. ``fallback_version`` keeps a git-less,
-# archive-less checkout from failing the build.
-version_file = "src/cocotb_vivado/_version.py"
-fallback_version = "0.0.0"
-# Only ``v``-prefixed release tags drive the version, so unrelated tags
-# (e.g. review checkpoints) are ignored.
-git_describe_command = [
-    "git", "describe", "--dirty", "--tags", "--long", "--match", "v[0-9]*",
-]
 
 [project.optional-dependencies]
 # Test-only dependencies. tests/test_axil.py, tests/test_bd_axi.py and
@@ -58,7 +42,6 @@ dev = [
     "pre-commit",
 ]
 
-
 [tool.setuptools]
 package-dir = { "" = "src" }
 
@@ -72,7 +55,7 @@ extend-exclude = [
     "build",
     "dist",
 ]
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -126,7 +109,7 @@ known-first-party = ["cocotb_vivado"]
 "tests/test_xsi.py" = ["PLW1510", "E712"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 packages = ["cocotb_vivado"]
 mypy_path = "src/"
 disallow_untyped_defs = true

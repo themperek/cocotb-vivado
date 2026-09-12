@@ -1,0 +1,8 @@
+# User-facing docs. README.md and LICENSE are also pulled from [project].
+include CHANGELOG.md
+include MIGRATION.md
+
+# Development-only trees — stay in git, not in the sdist.
+prune examples
+prune tests
+prune .github
