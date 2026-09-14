@@ -21,10 +21,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    # Upper bound is temporary: cocotb 2.1 changed the GPI simulator-shim
-    # contract (load_entry signature, handle type-tag reads at import).
-    # 2.1 support is tracked separately.
-    "cocotb>=2.0,<2.1",
+    "cocotb>=2.1",
 ]
 
 [project.urls]

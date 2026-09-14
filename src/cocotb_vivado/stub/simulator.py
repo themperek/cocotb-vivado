@@ -24,12 +24,14 @@ cocotb 2.x's GPI shim expects at module load:
 """
 
 import abc
+import sys
 import traceback
 
 from cocotb_vivado._gpi_enums import (  # noqa: F401
     DRIVERS,
     ENUM,
     FALLING,
+    FIXED_STRING,
     GENARRAY,
     INTEGER,
     LOADS,
@@ -39,6 +41,7 @@ from cocotb_vivado._gpi_enums import (  # noqa: F401
     MODULE,
     NETARRAY,
     PACKAGE,
+    PACKED,
     PACKED_STRUCTURE,
     RANGE_DOWN,
     RANGE_NO_DIR,
@@ -55,6 +58,17 @@ from .manager import Mgr
 
 # cocotb reads ``simulator.OBJECTS`` during iteration setup.
 OBJECTS = []
+
+# cocotb references these handle types in annotations (`cocotb.simulator.
+# sim_obj` / `sim_callback`) and mentions `cpp_clock` in docs. Our concrete
+# handles are our own classes, so plain placeholders satisfy the imports.
+sim_obj = object
+sim_callback = object
+
+
+class cpp_clock:
+    """Placeholder — XSim has no C-level clock; ``clock_create`` returns
+    ``None`` so cocotb uses its Python-coroutine clock instead."""
 
 
 # cocotb 2.x imports these ABCs from cocotb.simulator at module load.
@@ -118,28 +132,38 @@ def get_root_handle(root_name):
     return Mgr.inst().get_root_handle()
 
 
-def register_timed_callback(t, cb, ud):
+def root_iterate():
+    # Return nothing so cocotb falls back to get_root_handle(): XSim
+    # exposes a single top, which get_root_handle already yields.
+    return []
+
+
+def get_simulator_args():
+    return list(sys.argv)
+
+
+def register_timed_callback(t, cb):
     try:
-        return Mgr.inst().register_timed_callback(t, cb, ud)
+        return Mgr.inst().register_timed_callback(t, cb)
     except Exception as e:
         print(f"Exception while registering timed callback: {e!s}")
         traceback.print_exc()
 
 
-def register_value_change_callback(handle, callback, edge, ud):
-    return Mgr.inst().register_value_change_callback(handle, callback, edge, ud)
+def register_value_change_callback(handle, callback, edge):
+    return Mgr.inst().register_value_change_callback(handle, callback, edge)
 
 
-def register_readonly_callback(cb, ud):
-    return Mgr.inst().register_readonly_callback(cb, ud)
+def register_readonly_callback(cb):
+    return Mgr.inst().register_readonly_callback(cb)
 
 
-def register_nextstep_callback(cb, ud):
-    return Mgr.inst().register_timed_callback(1, cb, ud)
+def register_nextstep_callback(cb):
+    return Mgr.inst().register_timed_callback(1, cb)
 
 
-def register_rwsynch_callback(cb, ud):
-    return Mgr.inst().register_readwrite_callback(cb, ud)
+def register_rwsynch_callback(cb):
+    return Mgr.inst().register_readwrite_callback(cb)
 
 
 def stop_simulator():

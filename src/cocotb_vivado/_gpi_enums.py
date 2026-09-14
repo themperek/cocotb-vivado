@@ -4,11 +4,13 @@
 
 """GPI type / edge / discovery constants exported as ``cocotb.simulator``.
 
-cocotb 2.x's GPI shim layer expects a fixed enumeration of integer
-constants for handle types, value-change edges, and iterator modes.
-The values match cocotb 2.x's C-extension contract; the XSI manager
-and handle layer use them when reporting types and routing edge
-callbacks.
+cocotb's GPI shim layer expects a fixed enumeration of integer constants
+for handle types, value-change edges, and iterator modes. The exact
+values are an internal, self-consistent enumeration: cocotb reads them
+back from this shim (e.g. ``cocotb.handle`` builds its type map from
+``cocotb.simulator.*``) and our handle layer reports the same values, so
+they need only be distinct and cover every name cocotb references — they
+need not match cocotb's own C-extension values.
 """
 
 DRIVERS: int = 0
@@ -34,3 +36,5 @@ VALUE_CHANGE: int = 19
 RANGE_UP: int = 20
 RANGE_DOWN: int = 21
 RANGE_NO_DIR: int = 22
+PACKED: int = 23
+FIXED_STRING: int = 24

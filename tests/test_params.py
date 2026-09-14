@@ -1,12 +1,11 @@
 """Verify ``runner.build(parameters=...)`` forwards values to xelab via ``-generic_top``.
 
 Also probes the error path: an unknown parameter name should make xelab
-fail with ``[XSIM 43-3281]``, which the runner surfaces as
-``SystemExit``.
+fail with ``[XSIM 43-3281]``, which the runner surfaces as a
+``RuntimeError``.
 """
 
 import os
-import subprocess
 from pathlib import Path
 
 import cocotb
@@ -70,9 +69,9 @@ def test_params_override(build_dir):
 def test_params_unknown(build_dir):
     os.environ["EXPECTED_WIDTH"] = "8"
     os.environ["EXPECTED_DEPTH"] = "4"
-    # cocotb_tools.runner.Runner lets the failing subprocess raise its
-    # own CalledProcessError.
-    with pytest.raises(subprocess.CalledProcessError):
+    # cocotb_tools.runner.Runner surfaces a failed build/elab subprocess
+    # as a RuntimeError.
+    with pytest.raises(RuntimeError):
         _run(build_dir, parameters={"NOT_A_REAL_PARAM": 1234})
 
 
