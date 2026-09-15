@@ -40,7 +40,7 @@ async def reset(signal, timer):
 async def bd_axi_test(dut):
     AXIS_FIFO_BASEADDR = 0x1000
 
-    clk = Clock(dut.aclk, 200, units="ns")
+    clk = Clock(dut.aclk, 200, unit="ns")
     cocotb.start_soon(clk.start())
 
     cocotb.start_soon(reset(dut.areset, Timer(520, "ns")))

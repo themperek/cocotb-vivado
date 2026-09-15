@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Derived from vicoco's value-change manager
-# (https://github.com/kiran-vuksanaj/vicoco); adapted for cocotb 1.x/2.x.
+# (https://github.com/kiran-vuksanaj/vicoco); adapted for cocotb 2.x.
 
 """XSI simulation manager — singleton driving simulator + callback queues.
 
@@ -140,6 +140,12 @@ class Mgr:
                 # complete so, in new stable state, re-attempt value-change cbs
                 self._attempt_valuechange_callbacks()
 
+            # cocotb 2.x's regression manager can request shutdown via
+            # stop_simulator() during the RW drain; bail before the
+            # readonly phase if that happened.
+            if not self.is_running:
+                break
+
             # once this exits, there are no more readwrite stages so readonly
             # callbacks can run (cannot register value-sets)
             self._sim_advance(0)
@@ -175,8 +181,13 @@ class Mgr:
 
     def stop_simulator(self):
         self.is_running = False
-        error = self.xsi.close()
-        print(f"End simulation with status {xsi.XSI.status[error]}")
+        # Don't call ``self.xsi.close()`` here under cocotb 2.x —
+        # cocotb's atexit handlers (LogicArray / handle GC) still
+        # reach into the simulator after stop_simulator returns, and
+        # closing the XSI handle first crashes the process with
+        # SIGSEGV during teardown. The OS reclaims xsim's resources
+        # at process exit anyway.
+        print("End simulation")
 
     def get_precision(self):
         return self.xsi.get_precision()

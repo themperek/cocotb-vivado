@@ -4,39 +4,114 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # Derived from vicoco's gpi_emulation
-# (https://github.com/kiran-vuksanaj/vicoco); adapted for cocotb 1.x/2.x.
+# (https://github.com/kiran-vuksanaj/vicoco); adapted for cocotb 2.x.
 
 """``cocotb.simulator`` replacement that talks to the XSI manager.
 
-Forward every callback registration and handle query to
-:class:`cocotb_vivado.stub.manager.Mgr`. Mirrors vicoco's
-``gpi_emulation.py`` shape (cocotb 1.x flavor) for the call surface
-and forwarding pattern.
+Forwards every callback registration and handle query to
+:class:`cocotb_vivado.stub.manager.Mgr`, and provides the surface
+cocotb 2.x's GPI shim expects at module load:
+
+* Integer type / edge / iterator tags re-exported from
+  ``cocotb_vivado._gpi_enums``.
+* ``gpi_sim_hdl`` / ``gpi_cb_hdl`` / ``gpi_iterator_hdl`` ABCs (our
+  concrete handle classes satisfy these structurally).
+* ``clock_create`` returning ``None`` so cocotb's ``Clock`` uses its
+  Python-coroutine implementation; XSI has no native GpiClock path.
+* ``package_iterate`` / ``set_sim_event_callback`` /
+  ``initialize_logger`` / ``set_gpi_log_level`` /
+  ``gpi_has_registered_impl`` stubs.
 """
 
+import abc
 import traceback
+
+from cocotb_vivado._gpi_enums import (  # noqa: F401
+    DRIVERS,
+    ENUM,
+    FALLING,
+    GENARRAY,
+    INTEGER,
+    LOADS,
+    LOGIC,
+    LOGIC_ARRAY,
+    MEMORY,
+    MODULE,
+    NETARRAY,
+    PACKAGE,
+    PACKED_STRUCTURE,
+    RANGE_DOWN,
+    RANGE_NO_DIR,
+    RANGE_UP,
+    REAL,
+    RISING,
+    STRING,
+    STRUCTURE,
+    UNKNOWN,
+    VALUE_CHANGE,
+)
 
 from .manager import Mgr
 
-# GPI type tags cocotb 1.x checks against ``get_type()``.
-MODULE = 0
-STRUCTURE = 1
-REG = 2
-NET = 3
-NETARRAY = 4
-REAL = 5
-INTEGER = 6
-ENUM = 8
-STRING = 9
-GENARRAY = 10
-
-# Edge-type constants for value-change callbacks (cocotb 1.x convention).
-RISING = 11
-FALLING = 12
-VALUE_CHANGE = 13
-
-# Used by XsimRootHandle.iterate; cocotb expects the module to have it.
+# cocotb reads ``simulator.OBJECTS`` during iteration setup.
 OBJECTS = []
+
+
+# cocotb 2.x imports these ABCs from cocotb.simulator at module load.
+# Our concrete handle classes (in ``stub/handles.py``) satisfy the
+# protocol structurally; the ABCs here just unblock the imports.
+
+
+class gpi_cb_hdl(abc.ABC):
+    def deregister(self) -> None: ...
+
+
+class gpi_iterator_hdl(abc.ABC):
+    def __iter__(self) -> "gpi_iterator_hdl": ...
+
+    def __next__(self) -> "gpi_sim_hdl": ...
+
+
+class gpi_sim_hdl(abc.ABC):
+    def get_const(self) -> bool: ...
+
+    def get_definition_file(self) -> str: ...
+
+    def get_definition_name(self) -> str: ...
+
+    def get_handle_by_name(
+        self, name: str, discovery_method: int = 1
+    ) -> "gpi_sim_hdl | None": ...
+
+    def get_indexable(self) -> bool: ...
+
+    def get_name_string(self) -> str: ...
+
+    def get_num_elems(self) -> int: ...
+
+    def get_range(self) -> tuple: ...
+
+    def get_signal_val_binstr(self) -> str: ...
+
+    def get_signal_val_long(self) -> int: ...
+
+    def get_signal_val_real(self) -> float: ...
+
+    def get_signal_val_str(self) -> bytes: ...
+
+    def get_type(self) -> int: ...
+
+    def get_type_string(self) -> str: ...
+
+    def iterate(self, mode: int) -> gpi_iterator_hdl: ...
+
+    def set_signal_val_binstr(self, action: int, value: str) -> None: ...
+
+    def set_signal_val_int(self, action: int, value: int) -> None: ...
+
+    def set_signal_val_real(self, action: int, value: float) -> None: ...
+
+    def set_signal_val_str(self, action: int, value: bytes) -> None: ...
 
 
 def get_root_handle(root_name):
@@ -60,8 +135,6 @@ def register_readonly_callback(cb, ud):
 
 
 def register_nextstep_callback(cb, ud):
-    # cocotb's "nextstep" semantically means "fire after the smallest
-    # advance"; the timed queue with t=1 gives that ordering.
     return Mgr.inst().register_timed_callback(1, cb, ud)
 
 
@@ -78,6 +151,10 @@ def log_msg(*args, **kwargs):
 
 
 def log_level(level):
+    pass
+
+
+def set_gpi_log_level(level):
     pass
 
 
@@ -104,3 +181,32 @@ def get_simulator_product():
 
 def get_simulator_version():
     return "0.0.1"
+
+
+def package_iterate():
+    """Empty iterator — XSim exposes no VHDL package introspection."""
+    return iter([])
+
+
+def set_sim_event_callback(cb):
+    """No-op: XSim has no sim_event hooks we forward."""
+    pass
+
+
+def initialize_logger(log_func, get_logger):
+    """No-op: cocotb routes its own logs; we don't intercept."""
+    pass
+
+
+def gpi_has_registered_impl():
+    """Tell cocotb's GPI bootstrap there's a registered backend."""
+    return 1
+
+
+def clock_create(hdl):
+    """No GPI-level clock; cocotb falls back to its Python clock impl."""
+    return None
+
+
+class GpiClock:
+    """Stub — real GpiClock is C-level; we don't provide one."""

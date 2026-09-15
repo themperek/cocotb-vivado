@@ -12,7 +12,7 @@ from cocotb_vivado.runner import get_runner
 
 @cocotb.test()
 async def counter_increments(dut):
-    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start(start_high=False))
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start(start_high=False))
 
     # The clock starts low, so rising edges land at t = 5, 15, 25, ... ns.
     # cocotb applies value deposits before the simulator evaluates a timestep,
@@ -20,13 +20,13 @@ async def counter_increments(dut):
     # edge and the counter would start one cycle early. Release between edges
     # instead, which makes t = 35 ns plainly the first counted edge.
     dut.rst.value = 1
-    await Timer(27, units="ns")
+    await Timer(27, unit="ns")
     dut.rst.value = 0
-    await Timer(3, units="ns")
+    await Timer(3, unit="ns")
 
     expected = 0
     for _ in range(8):
-        await Timer(10, units="ns")
+        await Timer(10, unit="ns")
         expected = (expected + 1) & 0xFF
         assert int(dut.q.value) == expected, (
             f"expected q={expected}, got {int(dut.q.value)}"
