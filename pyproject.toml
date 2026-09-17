@@ -21,7 +21,10 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "cocotb>=1.8,<2.0",
+    # Upper bound is temporary: cocotb 2.1 changed the GPI simulator-shim
+    # contract (load_entry signature, handle type-tag reads at import).
+    # 2.1 support is tracked separately.
+    "cocotb>=2.0,<2.1",
 ]
 
 [project.urls]
@@ -134,9 +137,9 @@ module = [
 ]
 ignore_errors = true
 
-# cocotb has no public py.typed marker on the 1.x line we target.
+# cocotb's runtime packages have no public py.typed marker.
 [[tool.mypy.overrides]]
-module = ["cocotb", "cocotb.*"]
+module = ["cocotb", "cocotb.*", "cocotb_tools", "cocotb_tools.*", "pygpi", "pygpi.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

@@ -5,9 +5,9 @@ from pathlib import Path
 
 import cocotb
 import pytest
-from cocotb.binary import BinaryValue
 from cocotb.clock import Clock
 from cocotb.triggers import Timer
+from cocotb.types import LogicArray  # replaces 1.x's cocotb.binary.BinaryValue
 
 from cocotb_vivado.runner import get_runner
 
@@ -24,7 +24,7 @@ async def on_signal(signal, timer):
 
 @cocotb.test()
 async def cocotb_tb_test(dut):
-    clk = Clock(dut.clk, 5, units="ns")
+    clk = Clock(dut.clk, 5, unit="ns")
     cocotb.start_soon(clk.start(start_high=False))
 
     await Timer(10, "ns")
@@ -33,16 +33,16 @@ async def cocotb_tb_test(dut):
     for _ in range(10):
         await on_signal(dut.out, Timer(1, "ns"))
         cocotb.log.info(f"out={dut.out.value}")
-        assert expected_out_transitions.pop(0) == dut.out.value.binstr
+        assert expected_out_transitions.pop(0) == str(dut.out.value)
 
     await Timer(100, "ns")
 
     for v in ["1", "0", "x", "z", "X", "Z", "0"]:
-        dut.vec_in.setimmediatevalue(BinaryValue(v * 100))
+        dut.vec_in.set(LogicArray(v * 100))
         await Timer(10, "ns")
         vec_out = dut.vec_out.value
         cocotb.log.info(f"dut.vec_out {vec_out}")
-        assert (v * 100).lower() == vec_out.binstr
+        assert (v * 100).lower() == str(vec_out).lower()
 
 
 @cocotb.test()

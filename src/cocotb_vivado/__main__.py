@@ -30,6 +30,12 @@ sys.modules["cocotb.simulator"] = importlib.import_module(
 
 import cocotb  # noqa: E402
 
+# cocotb 2.x caches ``cocotb.simulator`` as an attribute; force the
+# substitution explicitly so the patched stub is what cocotb uses.
+cocotb.simulator = sys.modules["cocotb.simulator"]
+
+from pygpi.entry import load_entry  # noqa: E402
+
 from .stub.manager import Mgr  # noqa: E402
 
 
@@ -40,11 +46,13 @@ def _initialize_simulator(
     mgr = Mgr.init(  # type: ignore[no-untyped-call]
         xsim_design, wdb_file=wdb_file, toplevel_lang=toplevel_lang
     )
-    cocotb._initialise_testbench([])
+    # cocotb 2.x's pygpi.entry.load_entry replaces _initialise_testbench
+    # and handles regression pass/fail / exit-code on its own. Do not
+    # call mgr.close() afterwards — cocotb 2.x's at-exit handlers still
+    # reach into the simulator, and closing the XSI handle first crashes
+    # the process with SIGSEGV during teardown.
+    load_entry(argv_)
     mgr.run()
-    mgr.close()
-    if cocotb.regression_manager.failures:
-        sys.exit(1)
 
 
 if __name__ == "__main__":

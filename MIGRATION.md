@@ -3,6 +3,11 @@
 This document describes how to move existing cocotb-vivado tests onto
 the new Python runner API.
 
+**This release requires cocotb >= 2.0.** cocotb 1.x is no longer
+supported — the GPI shim targets cocotb 2.x's pygpi interface. Pin
+`cocotb>=2.0` and update any 1.x-only call sites (for example, the
+`units=` keyword on `Clock` / `Timer` is now `unit=`).
+
 ## From the legacy `cocotb_vivado.run()` direct-launch path
 
 Existing tests build the simulator binary themselves by spawning
@@ -53,19 +58,21 @@ def test_simple():
     )
 ```
 
-Both paths coexist for now. The legacy `cocotb_vivado.run()` function
-remains importable; the new runner is the recommended path going
-forward. The existing in-tree tests have been updated as follows:
+**`cocotb_vivado.run()` has been removed.** It was the cocotb 1.x
+direct-launch entry point and does not survive the move to cocotb 2.x:
+`cocotb._initialise_testbench`, which it called, no longer exists. The
+runner is now the only way to launch a simulation. Porting a `run()`
+call to `runner.build()` / `runner.test()` is the diff shown above.
 
-- `tests/test_simple.py` and `tests/test_tb.py` now use the new runner
-  by default. Their legacy variants are kept under
-  `@pytest.mark.skipif(... COCOTB_VIVADO_TEST_DIRECT=1 ...)` for
-  regression coverage.
-- `tests/test_axil.py` and `tests/test_fw.py` are on the new runner.
-  test_axil is pure RTL; test_fw uses `VivadoProject` (below).
-- `tests/test_xsi.py` is still skip-gated behind
-  `COCOTB_VIVADO_TEST_DIRECT=1` — it is a low-level XSI ctypes smoke
-  test rather than a runner-based simulation.
+Removing it also retires the old import-order rule. `run()` simulated
+in the calling process, so the XSI stub had to be installed before
+cocotb was imported. Simulations now run in a `python -m cocotb_vivado`
+subprocess that installs the stub itself, so a testbench may import
+`cocotb` and `cocotb_vivado` in any order.
+
+All in-tree tests run by default — there are no skip-gated tests and the
+`COCOTB_VIVADO_TEST_DIRECT` environment variable is gone. Every test
+needs Vivado on `PATH`; see the project README for CI implications.
 
 ## Vivado-managed sources (IP / BD / XPR)
 

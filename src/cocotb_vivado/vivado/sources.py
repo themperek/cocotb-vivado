@@ -28,7 +28,7 @@ import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from cocotb.runner import outdated
+from cocotb_tools.runner import outdated
 
 from ._tcl import EXPORT_SCRIPTS_TCL, ensure_xsim_ini, execute_tcl
 from .part import _resolve_part_num
