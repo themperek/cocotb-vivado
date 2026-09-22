@@ -3,52 +3,66 @@
 [![PyPI version](https://badge.fury.io/py/cocotb-vivado.svg)](https://pypi.org/project/cocotb-vivado/)
 [![lint](https://github.com/themperek/cocotb-vivado/actions/workflows/lint.yml/badge.svg)](https://github.com/themperek/cocotb-vivado/actions/workflows/lint.yml)
 
-A Python/[cocotb](https://github.com/cocotb/cocotb/) interface to the
-[Xilinx Vivado Simulator](https://docs.xilinx.com/v/u/en-US/dh0010-vivado-simulation-hub).
+Test Vivado designs from Python with [cocotb](https://github.com/cocotb/cocotb/) and XSim.
 
-Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
-The Python runner and the value-change manager are derived from
-[vicoco](https://github.com/kiran-vuksanaj/vicoco) by Kiran Vuksanaj.
+`cocotb-vivado` works with plain RTL, Vivado IP (`.xci`), block designs (`.bd`) and complete
+projects (`.xpr`).
 
----
+If your design already depends on Vivado, you can keep XSim and write the testbench in Python instead of VHDL or SystemVerilog.
 
-## Project status
+## Why cocotb-vivado?
 
-**Active development.** The Python runner experience is being rebuilt.
-See [CHANGELOG.md](CHANGELOG.md) for what's landed and
-[MIGRATION.md](MIGRATION.md) for breaking changes.
+- Test designs that contain Xilinx IP and Vivado block designs.
+- Use cocotb, pytest and Python libraries in the testbench.
+- Keep XSim. No Questa, VCS or Xcelium setup is required.
+- Change Python tests and rerun them without recompiling the HDL.
+- Use cocotb extensions such as [cocotbext-axi](https://github.com/alexforencich/cocotbext-axi) with AXI/AXIS interfaces.
 
-Known limitations:
 
-- Only top-level ports are accessible (XSI limitation).
-- `RisingEdge` / `FallingEdge` / `Edge` only see changes after Python
-  advances time (`Timer` / `cocotb.clock.Clock`). Verilog `#` delays are
-  not visible to those triggers, so awaiting an edge on a DUT-driven
-  clock with no concurrent Python-driven time advance will not progress.
-- Waveform dump via `$dumpfile` / `$dumpvars` is Verilog-only and
-  cannot hook into a VHDL top; with a VHDL top, only the Vivado WDB
-  output (`wave_format="wdb"`) is available.
-- Direct access to the **XSI interface** via `cocotb_vivado.xsi` is
-  available for low-level tooling.
+**A typical workflow is:**
 
-## Platform support
+```mermaid
+flowchart TD
+    sources["RTL / .xci / .bd / .xpr"] -->|build when design changes| snapshot["XSim snapshot"]
+    snapshot --> test1["Python test<br/>run 1"]
+    snapshot --> test2["Python test<br/>run 2"]
 
-**Linux only.** The loader is Linux-specific — cocotb-vivado `dlopen`s
-the XSim snapshot (`xsimk.so`) via `ctypes` and derives an
-`LD_LIBRARY_PATH` from Vivado's `lib/lnx64.o`. XSI itself is not
-Linux-specific (Vivado's XSim and the XSI C API ship on Windows too), so
-a Windows port is plausible, but it is untested.
+    classDef source fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:2px
+    classDef snapshot fill:#e0e7ff,stroke:#4f46e5,color:#312e81,stroke-width:2px
+    classDef test fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px
 
-## Tested Vivado versions
+    class sources source
+    class snapshot snapshot
+    class test1,test2 test
+```
 
-- Vivado **2023.1** — minimum supported.
-- Newer versions are expected to work but verify locally.
+
+
+## Build once, rerun tests
+
+Changing a Python test does not require recompiling or re-elaborating the HDL.
+
+`runner.build()` uses a content-hash cache. If the HDL, Vivado sources,
+build options and relevant tool versions have not changed, the existing
+XSim snapshot is reused.
+
+Pass `always=True` to force a rebuild.
 
 ## Installation
 
 ```bash
 pip install cocotb-vivado
 ```
+
+Set up the Vivado environment before running:
+
+```bash
+source /path/to/Vivado/<version>/settings64.sh
+```
+
+`xelab`, `xvlog` and `xvhdl` must be on `PATH`. `LD_LIBRARY_PATH` must also be
+set, or `XILINX_VIVADO` can be used as a fallback so the runner can construct
+the required library path for the test subprocess.
 
 ## Quickstart
 
@@ -72,12 +86,14 @@ async def simple_test(dut):
 
 def test_simple():
     runner = get_runner("vivado")
+
+    # Compile and elaborate only when the design or build options change.
     runner.build(
         sources=[Path(__file__).parent / "tb.v"],
         hdl_toplevel="tb",
-        always=True,
         timescale=("1ns", "1ps"),
     )
+
     runner.test(
         hdl_toplevel="tb",
         test_module="test_simple",
@@ -86,59 +102,33 @@ def test_simple():
     )
 ```
 
-See [`examples/`](examples/) for runnable projects and the `tests/`
-directory for more scenarios.
-
-Before running:
+Run it with pytest:
 
 ```bash
-source /path/to/Vivado/<version>/settings64.sh
-pytest -s tests/
+pytest -s test_simple.py
 ```
 
-`xelab` / `xvlog` / `xvhdl` must be on `PATH` and `LD_LIBRARY_PATH`
-must be set (or `XILINX_VIVADO` set as a courtesy fallback so the
-runner can synthesize one for the test subprocess).
+Now change only `simple_test()` and run it again. The HDL build is reused.
 
-## How the GPI shim is installed
+See [`examples/`](examples/) for runnable projects and `tests/` for more
+scenarios.
 
-Importing `cocotb_vivado` replaces `cocotb.simulator` in `sys.modules`
-with the in-process XSI stub, and cocotb caches the simulator handle at
-its own import time — so the stub has to be installed before cocotb is
-imported.
+## Where it fits
 
-**This is handled for you and imposes no rule on your testbench.**
-`runner.test()` spawns `python -m cocotb_vivado`, which installs the stub
-before importing cocotb; cocotb then loads your test module. Import
-`cocotb` and `cocotb_vivado` in whatever order your formatter prefers:
+`cocotb-vivado` is mainly intended for designs where XSim is already part of
+the flow because of Vivado-specific content. Typical cases include an existing
+`.xpr` project, generated Xilinx IP, a block design, mixed-language simulation,
+or an AXI/AXIS design that you want to drive with `cocotbext-axi`.
 
-```python
-import cocotb
-from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, Timer
-
-from cocotb_vivado.runner import get_runner
-```
-
-## Waveform output
-
-The `wave_format` kwarg on `runner.build()` / `runner.test()` selects
-the dump format:
-
-```python
-runner.build(..., wave_format="vcd")      # Verilog $dumpfile/$dumpvars
-runner.build(..., wave_format="fst")      # VCD post-processed by vcd2fst
-runner.build(..., wave_format="wdb")      # Vivado native, viewable in xsim --gui
-runner.build(...)                          # default: no waves
-```
-
-All formats land in `{build_dir}/{hdl_toplevel}.{ext}` for symmetry.
+For portable RTL, another cocotb-supported simulator may be simpler or faster.
+The point of this project is to use cocotb when the simulation target needs
+Vivado/XSim.
 
 ## Vivado-managed sources (IP / BD / XPR)
 
-Vivado inputs are passed to the runner via **source objects** from
+Vivado inputs are passed to the runner as source objects from
 `cocotb_vivado.vivado`, alongside plain HDL paths in
-`runner.build(sources=[...])`. Pick the class by input file format:
+`runner.build(sources=[...])`. Choose the class that matches the input format:
 
 | Input | Class | Vivado mechanism |
 |-------|-------|------------------|
@@ -147,8 +137,8 @@ Vivado inputs are passed to the runner via **source objects** from
 | `.xpr` | `VivadoProject` | `open_project; launch_simulation -scripts_only` |
 | `.tcl` / pre-extracted | `VivadoExportedSim` | runs your TCL |
 
-A source object sits in the same `sources=` list as plain HDL. Here a
-`blk_mem_gen` IP is instantiated by a hand-written wrapper, and the wrapper
+A source object goes in the same `sources=` list as plain HDL. In this example,
+a `blk_mem_gen` IP is instantiated by a hand-written wrapper, and the wrapper
 is the toplevel (`tests/test_bram.py`):
 
 ```python
@@ -172,8 +162,8 @@ runner.build(
 )
 ```
 
-A block design or a project defines its own toplevel instead, and reports
-the names to use (`tests/test_bd_axi.py`):
+A block design or project defines its own toplevel and reports the names to use
+(`tests/test_bd_axi.py`):
 
 ```python
 from cocotb_vivado.vivado import VivadoBd
@@ -185,78 +175,158 @@ bd = VivadoBd(
 )
 runner.build(
     sources=[bd],
-    hdl_toplevel=bd.top,        # "bd_axi_wrapper" — Vivado's wrapper name
+    hdl_toplevel=bd.top,        # "bd_axi_wrapper", Vivado's wrapper name
     hdl_library=bd.library,     # "xil_defaultlib"
 )
 ```
 
-Note the path convention: a relative `.xci` / `.bd` path resolves **under
-the build directory** — that is where `builder_tcl` deposits it — while
-`builder_tcl` itself is an input you already have, so pass it absolute
-(relative resolves against the current working directory).
+Relative `.xci` and `.bd` paths resolve under the build directory, because that
+is where `builder_tcl` deposits them. `builder_tcl` itself is an input you
+already have, so pass it as an absolute path. A relative `builder_tcl` path
+resolves against the current working directory.
 
-**One design-defining source per build.** `hdl_library` is a single
-setting for the whole build — every plain source is compiled into it and
-the toplevel is elaborated from it — so a `VivadoBd` and your own RTL
-necessarily share one library. `VivadoBd`, `VivadoProject` and
-`VivadoExportedSim` each extract into `xil_defaultlib`, so combining two
-of them in one build merges two independently generated structural HDL
-sets and risks name collisions. Use at most one of those three, plus any
-number of `VivadoIp` and plain HDL sources.
+Use one design-defining source per build. `hdl_library` is a single setting for
+the whole build, so every plain source is compiled into that library and the
+toplevel is elaborated from it. `VivadoBd`, `VivadoProject` and
+`VivadoExportedSim` each extract into `xil_defaultlib`. Combining two of them in
+one build merges independently generated structural HDL sets and can cause name
+collisions. Use at most one of those three, plus any number of `VivadoIp` and
+plain HDL sources.
 
-Each source self-orchestrates its Vivado batch invocation (with
-mtime-based caching) and returns a parsed view of the resulting
-Vivado-emitted `xsim/` directory: per-language `.prj` files (consumed
-via `xvlog -prj` / `xvhdl -prj`) and a sibling `*.sh` script whose
-`xelab` command line contributes the `-L` library set and any
-`<lib>.glbl` modules. `VivadoBd`, `VivadoProject` and `VivadoExportedSim`
-go through `launch_simulation -scripts_only -absolute_path`;
-`VivadoIp` uses `export_ip_user_files`.
+Each Vivado source runs the required Vivado batch command, with mtime-based
+caching, and returns a parsed view of the generated `xsim/` directory. The
+runner uses the per-language `.prj` files with `xvlog -prj` / `xvhdl -prj` and
+reads the sibling `*.sh` script to recover the `xelab` library arguments and
+any `<lib>.glbl` modules. `VivadoBd`, `VivadoProject` and `VivadoExportedSim`
+use `launch_simulation -scripts_only -absolute_path`; `VivadoIp` uses
+`export_ip_user_files`.
 
-**Block designs and interface flattening.** XSI exposes only top-level
-*scalar* ports — there is no hierarchical or interface access. A block
-design whose top is built from `create_bd_intf_port` (AXI/AXIS/BRAM) is
-therefore not directly drivable. `VivadoBd` defaults to `wrapper=True`,
-generating Vivado's RTL wrapper (`make_wrapper -top`) that flattens each
-interface bundle into discrete scalar ports — the form `cocotbext-axi`
-binds to. `bd.top` reports the resulting `<bd>_wrapper` name so you need
-not hardcode it. For a BD whose top is all plain signals
-(`create_bd_port`), pass `wrapper=False` to elaborate the BD module
-directly (`bd.top` is then the bare `<bd>`).
+### Block designs and interface flattening
 
-`part_num` is required on `VivadoIp` and `VivadoBd` (the IP/BD generator
-needs a `set_part` target). `VivadoProject` reads the part from the XPR
-and accepts an optional `part_num` to *retarget* in-memory for
-simulation. `VivadoExportedSim`'s TCL controls its own part. It falls back
-to the `COCOTB_DEFAULT_PART_NUM` environment variable, and
-`cocotb_vivado.vivado.discover_default_part()` is an opt-in helper that
-queries Vivado once and caches the answer. Pure-RTL builds without any
-`VivadoSource` instance never touch the `vivado` binary.
+XSI exposes only top-level scalar ports. It does not provide hierarchical or
+interface access. A block design whose top uses `create_bd_intf_port`
+(AXI/AXIS/BRAM) therefore cannot be driven directly.
 
-The `.bd` can be committed alongside the test, or regenerated on first
-build by passing `builder_tcl` (a script that constructs it and
-`save_bd_design`s) — the latter keeps the fixture Vivado-version-
-agnostic. To use a block design as a *sub-component* under your own
-top-level RTL, list the `VivadoBd` alongside your HDL and name your
-module as the top: `sources=[VivadoBd("x.bd"), "my_tb.sv"]`,
-`hdl_toplevel="my_tb"`.
+`VivadoBd` uses `wrapper=True` by default and asks Vivado to generate an RTL
+wrapper with `make_wrapper -top`. The wrapper flattens interface bundles into
+scalar ports, which is the form expected by `cocotbext-axi`. `bd.top` reports
+the resulting `<bd>_wrapper` name, so it does not have to be hardcoded.
 
-See `tests/test_bd_axi.py` for a `VivadoBd` example that flattens an
-AXI-Lite + AXIS block design, and `tests/test_fw.py` for the equivalent
-via a full `VivadoProject`.
+If a block design uses only plain signals created with `create_bd_port`, pass
+`wrapper=False` to elaborate the BD module directly. In that case `bd.top` is
+the bare `<bd>` name.
+
+`part_num` is required for `VivadoIp` and `VivadoBd` because the generator needs
+a `set_part` target. `VivadoProject` reads the part from the XPR and accepts an
+optional `part_num` to retarget the project in memory for simulation.
+`VivadoExportedSim` leaves part selection to its TCL script.
+
+If `part_num` is not supplied, the code can fall back to the
+`COCOTB_DEFAULT_PART_NUM` environment variable.
+`cocotb_vivado.vivado.discover_default_part()` is an opt-in helper that queries
+Vivado once and caches the result. Pure RTL builds without a `VivadoSource`
+object do not invoke the `vivado` binary.
+
+A `.bd` file can be committed with the test or regenerated on the first build
+with `builder_tcl`. A builder script constructs the design and calls
+`save_bd_design`, which can make the test fixture less dependent on a checked-in
+Vivado-generated file.
+
+To use a block design below your own RTL toplevel, list the `VivadoBd` together
+with the HDL and name your module as the top:
+
+```python
+sources=[VivadoBd("x.bd"), "my_tb.sv"]
+hdl_toplevel="my_tb"
+```
+
+See `tests/test_bd_axi.py` for a `VivadoBd` example that flattens an AXI-Lite +
+AXIS block design. `tests/test_fw.py` shows the equivalent setup with a full
+`VivadoProject`.
 
 ## cocotb extensions
 
-Extensions like [cocotbext-axi](https://github.com/alexforencich/cocotbext-axi)
-work as long as the DUT is clocked by a Python-driven `Clock` (XSI
-exposes no native GPI clock). AXI bus accesses are routed through
-the cocotb scheduler the extension expects.
+Extensions such as
+[cocotbext-axi](https://github.com/alexforencich/cocotbext-axi) work when the DUT
+is clocked by a Python-driven `Clock`. XSI does not expose a native GPI clock.
+AXI bus accesses still go through the cocotb scheduler expected by the
+extension.
+
+## Waveform output
+
+The `wave_format` argument on `runner.build()` / `runner.test()` selects the
+output format:
+
+```python
+runner.build(..., wave_format="vcd")      # Verilog $dumpfile/$dumpvars
+runner.build(..., wave_format="fst")      # VCD post-processed by vcd2fst
+runner.build(..., wave_format="wdb")      # Vivado native, viewable in xsim --gui
+runner.build(...)                         # default: no waves
+```
+
+All formats are written to `{build_dir}/{hdl_toplevel}.{ext}`.
+
+## Project status and limitations
+
+The project is under active development, and the Python runner API is still
+changing. See [CHANGELOG.md](CHANGELOG.md) for recent changes and
+[MIGRATION.md](MIGRATION.md) for breaking changes.
+
+Current XSI limitations:
+
+- XSI exposes only top-level ports.
+- `RisingEdge` / `FallingEdge` / `Edge` see changes only after Python advances
+  simulation time with `Timer` or `cocotb.clock.Clock`. Verilog `#` delays are
+  not visible to those triggers. Waiting on an edge from a DUT-driven clock
+  without concurrent Python-driven time advance will therefore not progress.
+- `$dumpfile` / `$dumpvars` waveform dumping is Verilog-only and cannot attach
+  to a VHDL top. For VHDL tops, use Vivado WDB output with
+  `wave_format="wdb"`.
+- `cocotb_vivado.xsi` provides direct access to the XSI interface for low-level
+  tooling.
+
+### Platform support
+
+The current loader supports Linux only. `cocotb-vivado` loads the XSim snapshot
+(`xsimk.so`) with `ctypes` and derives `LD_LIBRARY_PATH` from Vivado's
+`lib/lnx64.o`.
+
+XSI itself is available on Windows as well, but the Windows path has not been
+tested here.
+
+### Tested Vivado versions
+
+- Vivado **2023.1** is the minimum supported version.
+- Newer versions are expected to work but should be verified locally.
+
+## Implementation notes: GPI shim
+
+XSim exposes no VPI/VHPI, so the runner replaces `cocotb.simulator` with an
+in-process XSI stub. cocotb binds that handle when it is imported, so the stub
+has to be installed first: the `python -m cocotb_vivado` subprocess that
+`runner.test()` starts installs it before importing cocotb, then loads your
+test module.
+
+Importing `cocotb_vivado` itself has no side effects, so your testbench can
+import `cocotb` and `cocotb_vivado` in either order:
+
+```python
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import RisingEdge, Timer
+
+from cocotb_vivado.runner import get_runner
+```
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Acknowledgment
+## Acknowledgments
 
-We'd like to thank our employer, [Dectris](https://dectris.com/) for
-supporting this work.
+Based on [cocotb-stub-sim](https://github.com/fvutils/cocotb-stub-sim).
+
+The Python runner and value-change manager are derived from
+[vicoco](https://github.com/kiran-vuksanaj/vicoco) by Kiran Vuksanaj.
+
+Thanks to [Dectris](https://dectris.com/) for supporting this work.
