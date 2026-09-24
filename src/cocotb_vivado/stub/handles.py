@@ -26,7 +26,6 @@ the requested edge (rising / falling / any). The manager invokes
 
 import abc
 from collections.abc import Callable
-from typing import Any
 
 from cocotb_vivado import _gpi_enums as _enums
 
@@ -121,30 +120,27 @@ class XsiPortHandle:
 
 class CbClosure(abc.ABC):
     def __init__(self) -> None:
-        self.cb: Callable[[Any], None] | None = None
-        self.ud: Any = None
+        self.cb: Callable[[], None] | None = None
 
     def __call__(self):
         if self.cb is not None:
-            self.cb(self.ud)
+            self.cb()
 
     def deregister(self):
         self.cb = None
 
 
 class TimedCbClosure(CbClosure):
-    def __init__(self, time_off, cb, ud):
+    def __init__(self, time_off, cb):
         self.time_off = time_off
         self.cb = cb
-        self.ud = ud
         self.cb_id = 1
 
 
 class ValueChangeCbClosure(CbClosure):
-    def __init__(self, handle, edge, cb, ud):
+    def __init__(self, handle, edge, cb):
         self.handle = handle
         self.cb = cb
-        self.ud = ud
         self.edge = edge
 
         try:
@@ -179,15 +175,13 @@ class ValueChangeCbClosure(CbClosure):
 
 
 class ReadWriteCbClosure(CbClosure):
-    def __init__(self, callback, trigger):
+    def __init__(self, callback):
         self.cb = callback
-        self.ud = trigger
 
 
 class ReadOnlyCbClosure(CbClosure):
-    def __init__(self, callback, trigger):
+    def __init__(self, callback):
         self.cb = callback
-        self.ud = trigger
 
 
 __all__ = [

@@ -192,8 +192,8 @@ class Mgr:
     def get_precision(self):
         return self.xsi.get_precision()
 
-    def register_timed_callback(self, t, cb, ud):
-        ret = TimedCbClosure(t, cb, ud)
+    def register_timed_callback(self, t, cb):
+        ret = TimedCbClosure(t, cb)
         time_to_fire = self.get_sim_time() + t
 
         if time_to_fire in self._timerqueue:
@@ -203,18 +203,18 @@ class Mgr:
 
         return ret
 
-    def register_value_change_callback(self, handle, callback, edge, ud):
-        closure = ValueChangeCbClosure(handle, edge, callback, ud)
+    def register_value_change_callback(self, handle, callback, edge):
+        closure = ValueChangeCbClosure(handle, edge, callback)
         self._vcqueue.append(closure)
         return closure
 
-    def register_readwrite_callback(self, callback, trigger):
-        closure = ReadWriteCbClosure(callback, trigger)
+    def register_readwrite_callback(self, callback):
+        closure = ReadWriteCbClosure(callback)
         self._readwrite_queue.append(closure)
         return closure
 
-    def register_readonly_callback(self, callback, trigger):
-        closure = ReadOnlyCbClosure(callback, trigger)
+    def register_readonly_callback(self, callback):
+        closure = ReadOnlyCbClosure(callback)
         self._readonly_queue.append(closure)
         return closure
 
