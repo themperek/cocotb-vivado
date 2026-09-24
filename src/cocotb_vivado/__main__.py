@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import inspect
 import os
 import sys
 
@@ -39,9 +40,17 @@ cocotb.simulator = _stub  # type: ignore[attr-defined]
 sys.modules["cocotb"] = cocotb
 _spec.loader.exec_module(cocotb)
 
-from pygpi.entry import load_entry  # noqa: E402
+from pygpi.entry import load_entry as _load_entry  # noqa: E402
 
 from .stub.manager import Mgr  # noqa: E402
+
+
+def _load_cocotb() -> None:
+    """Start the regression on cocotb 2.0 (``load_entry(argv)``) and 2.1 (no args)."""
+    if inspect.signature(_load_entry).parameters:
+        _load_entry(sys.argv)
+    else:
+        _load_entry()
 
 
 def _initialize_simulator(xsim_design: str, wdb_file: str | None = None) -> None:
@@ -49,12 +58,12 @@ def _initialize_simulator(xsim_design: str, wdb_file: str | None = None) -> None
     mgr = Mgr.init(  # type: ignore[no-untyped-call]
         xsim_design, wdb_file=wdb_file, toplevel_lang=toplevel_lang
     )
-    # pygpi.entry.load_entry runs the cocotb regression (reading sys.argv
-    # itself) and handles pass/fail / exit-code on its own. Do not call
-    # mgr.close() afterwards — cocotb's at-exit handlers still reach into
-    # the simulator, and closing the XSI handle first crashes the process
+    # pygpi.entry.load_entry runs the cocotb regression and handles
+    # pass/fail / exit-code on its own. Do not call mgr.close()
+    # afterwards — cocotb's at-exit handlers still reach into the
+    # simulator, and closing the XSI handle first crashes the process
     # with SIGSEGV during teardown.
-    load_entry()
+    _load_cocotb()
     mgr.run()
 
 

@@ -54,6 +54,7 @@ from cocotb_vivado._gpi_enums import (  # noqa: F401
     VALUE_CHANGE,
 )
 
+from .handles import _NO_USERDATA
 from .manager import Mgr
 
 # cocotb reads ``simulator.OBJECTS`` during iteration setup.
@@ -142,28 +143,28 @@ def get_simulator_args():
     return list(sys.argv)
 
 
-def register_timed_callback(t, cb):
+def register_timed_callback(t, cb, ud=_NO_USERDATA):
     try:
-        return Mgr.inst().register_timed_callback(t, cb)
+        return Mgr.inst().register_timed_callback(t, cb, ud)
     except Exception as e:
         print(f"Exception while registering timed callback: {e!s}")
         traceback.print_exc()
 
 
-def register_value_change_callback(handle, callback, edge):
-    return Mgr.inst().register_value_change_callback(handle, callback, edge)
+def register_value_change_callback(handle, callback, edge, ud=_NO_USERDATA):
+    return Mgr.inst().register_value_change_callback(handle, callback, edge, ud)
 
 
-def register_readonly_callback(cb):
-    return Mgr.inst().register_readonly_callback(cb)
+def register_readonly_callback(cb, ud=_NO_USERDATA):
+    return Mgr.inst().register_readonly_callback(cb, ud)
 
 
-def register_nextstep_callback(cb):
-    return Mgr.inst().register_timed_callback(1, cb)
+def register_nextstep_callback(cb, ud=_NO_USERDATA):
+    return Mgr.inst().register_timed_callback(1, cb, ud)
 
 
-def register_rwsynch_callback(cb):
-    return Mgr.inst().register_readwrite_callback(cb)
+def register_rwsynch_callback(cb, ud=_NO_USERDATA):
+    return Mgr.inst().register_readwrite_callback(cb, ud)
 
 
 def stop_simulator():

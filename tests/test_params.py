@@ -6,6 +6,7 @@ fail with ``[XSIM 43-3281]``, which the runner surfaces as a
 """
 
 import os
+import subprocess
 from pathlib import Path
 
 import cocotb
@@ -69,9 +70,8 @@ def test_params_override(build_dir):
 def test_params_unknown(build_dir):
     os.environ["EXPECTED_WIDTH"] = "8"
     os.environ["EXPECTED_DEPTH"] = "4"
-    # cocotb_tools.runner.Runner surfaces a failed build/elab subprocess
-    # as a RuntimeError.
-    with pytest.raises(RuntimeError):
+    # cocotb 2.0's runner raises CalledProcessError; 2.1 raises RuntimeError.
+    with pytest.raises((subprocess.CalledProcessError, RuntimeError)):
         _run(build_dir, parameters={"NOT_A_REAL_PARAM": 1234})
 
 

@@ -27,6 +27,7 @@ Owns the four-queue scheduling layout cocotb's GPI shim expects:
 from cocotb_vivado import xsi
 
 from .handles import (
+    _NO_USERDATA,
     ReadOnlyCbClosure,
     ReadWriteCbClosure,
     TimedCbClosure,
@@ -192,8 +193,8 @@ class Mgr:
     def get_precision(self):
         return self.xsi.get_precision()
 
-    def register_timed_callback(self, t, cb):
-        ret = TimedCbClosure(t, cb)
+    def register_timed_callback(self, t, cb, ud=_NO_USERDATA):
+        ret = TimedCbClosure(t, cb, ud)
         time_to_fire = self.get_sim_time() + t
 
         if time_to_fire in self._timerqueue:
@@ -203,18 +204,18 @@ class Mgr:
 
         return ret
 
-    def register_value_change_callback(self, handle, callback, edge):
-        closure = ValueChangeCbClosure(handle, edge, callback)
+    def register_value_change_callback(self, handle, callback, edge, ud=_NO_USERDATA):
+        closure = ValueChangeCbClosure(handle, edge, callback, ud)
         self._vcqueue.append(closure)
         return closure
 
-    def register_readwrite_callback(self, callback):
-        closure = ReadWriteCbClosure(callback)
+    def register_readwrite_callback(self, callback, ud=_NO_USERDATA):
+        closure = ReadWriteCbClosure(callback, ud)
         self._readwrite_queue.append(closure)
         return closure
 
-    def register_readonly_callback(self, callback):
-        closure = ReadOnlyCbClosure(callback)
+    def register_readonly_callback(self, callback, ud=_NO_USERDATA):
+        closure = ReadOnlyCbClosure(callback, ud)
         self._readonly_queue.append(closure)
         return closure
 

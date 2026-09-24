@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cocotb-vivado"
-version = "0.0.7"
+version = "0.1.1"
 description = "Limited cocotb/Python interface for Xilinx Vivado Simulator"
 readme = "README.md"
 license = "Apache-2.0"
@@ -21,7 +21,8 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "cocotb>=2.1",
+    # 2.2 is untested: the GPI shim contract changed between 2.0 and 2.1.
+    "cocotb>=2.0,<2.2",
 ]
 
 [project.urls]
