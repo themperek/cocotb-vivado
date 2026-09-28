@@ -294,10 +294,20 @@ The current loader supports Linux only. `cocotb-vivado` loads the XSim snapshot
 XSI itself is available on Windows as well, but the Windows path has not been
 tested here.
 
-### Tested Vivado versions
+### Tested versions
 
-- Vivado **2023.1** is the minimum supported version.
-- Newer versions are expected to work but should be verified locally.
+Vivado **2023.1** is the minimum supported version. The GPI shim is verified
+against these cocotb × Vivado combinations by the local test matrix
+(`noxfile.py`); CI has no Vivado, so these runs are local.
+
+| cocotb | Vivado 2023.1 | Vivado 2025.1 |
+|--------|:-------------:|:-------------:|
+| 2.0.0  |      ✅       |      ✅       |
+| 2.0.1  |      ✅       |      ✅       |
+| 2.1.0  |      ✅       |      ✅       |
+
+cocotb 2.0.0 is the declared floor (`cocotb>=2.0` in `pyproject.toml`). Other
+Vivado versions are expected to work but should be verified locally.
 
 ## Implementation notes: GPI shim
 
