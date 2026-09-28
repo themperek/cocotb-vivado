@@ -111,6 +111,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Supports cocotb 2.0 and 2.1.** The GPI shim follows 2.1's type-tag
+  and `load_entry` changes, and still accepts the 2.0 `argv` and
+  callback user-data arguments when that version passes them.
 - **Requires cocotb 2.0.x.** cocotb 1.x is no longer supported (cocotb
   2.1 support is in progress). The GPI shim now targets cocotb 2.x's
   pygpi interface — integer type / edge tags come from

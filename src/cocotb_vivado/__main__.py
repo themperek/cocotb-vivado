@@ -18,40 +18,58 @@ cocotb regression, and exits with the regression's pass/fail status.
 from __future__ import annotations
 
 import importlib
+import importlib.util
+import inspect
 import os
 import sys
-from sys import argv
+from typing import Any
 
-# The stub must replace cocotb.simulator BEFORE cocotb itself is imported,
-# so the GPI shim is in place when cocotb wires up its callbacks.
-sys.modules["cocotb.simulator"] = importlib.import_module(
-    "cocotb_vivado.stub.simulator"
-)
+# Replace cocotb.simulator with the in-process XSI stub. cocotb's
+# ``cocotb.handle`` reads ``cocotb.simulator.*`` at import time, so the
+# stub must be bound as the ``cocotb.simulator`` *attribute* before
+# cocotb's ``__init__`` runs. Putting it in ``sys.modules`` alone does not
+# bind the parent attribute — importlib only does that when it loads the
+# submodule itself — so build the cocotb module, set the attribute, then
+# execute its ``__init__``.
+_stub = importlib.import_module("cocotb_vivado.stub.simulator")
+sys.modules["cocotb.simulator"] = _stub
 
-import cocotb  # noqa: E402
+_spec = importlib.util.find_spec("cocotb")
+assert _spec is not None and _spec.loader is not None
+cocotb = importlib.util.module_from_spec(_spec)
+cocotb.simulator = _stub  # type: ignore[attr-defined]
+sys.modules["cocotb"] = cocotb
+_spec.loader.exec_module(cocotb)
 
-# cocotb 2.x caches ``cocotb.simulator`` as an attribute; force the
-# substitution explicitly so the patched stub is what cocotb uses.
-cocotb.simulator = sys.modules["cocotb.simulator"]
-
-from pygpi.entry import load_entry  # noqa: E402
+from pygpi.entry import load_entry as _load_entry  # noqa: E402
 
 from .stub.manager import Mgr  # noqa: E402
 
 
-def _initialize_simulator(
-    argv_: list[str], xsim_design: str, wdb_file: str | None = None
-) -> None:
+def _load_cocotb() -> None:
+    """Start the regression on cocotb 2.0 (``load_entry(argv)``) and 2.1 (no args)."""
+    # load_entry's signature differs by cocotb version (2.0 takes argv, 2.1
+    # takes none). Dispatch on the real signature at runtime, and hide the
+    # call arity from mypy — it type-checks against whichever cocotb is
+    # installed and would flag the other version's branch.
+    load: Any = _load_entry
+    if inspect.signature(_load_entry).parameters:
+        load(sys.argv)
+    else:
+        load()
+
+
+def _initialize_simulator(xsim_design: str, wdb_file: str | None = None) -> None:
     toplevel_lang = os.getenv("TOPLEVEL_LANG", "verilog")
     mgr = Mgr.init(  # type: ignore[no-untyped-call]
         xsim_design, wdb_file=wdb_file, toplevel_lang=toplevel_lang
     )
-    # cocotb 2.x's pygpi.entry.load_entry replaces _initialise_testbench
-    # and handles regression pass/fail / exit-code on its own. Do not
-    # call mgr.close() afterwards — cocotb 2.x's at-exit handlers still
-    # reach into the simulator, and closing the XSI handle first crashes
-    # the process with SIGSEGV during teardown.
-    load_entry(argv_)
+    # pygpi.entry.load_entry runs the cocotb regression and handles
+    # pass/fail / exit-code on its own. Do not call mgr.close()
+    # afterwards — cocotb's at-exit handlers still reach into the
+    # simulator, and closing the XSI handle first crashes the process
+    # with SIGSEGV during teardown.
+    _load_cocotb()
     mgr.run()
 
 
@@ -66,4 +84,4 @@ if __name__ == "__main__":
     design_so_file = f"xsim.dir/{snapshot_name}/xsimk.so"
     wdb_file = os.getenv("VIVADO_WDB_FILE") or None
 
-    _initialize_simulator(argv, design_so_file, wdb_file=wdb_file)
+    _initialize_simulator(design_so_file, wdb_file=wdb_file)

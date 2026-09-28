@@ -30,6 +30,10 @@ from typing import Any
 
 from cocotb_vivado import _gpi_enums as _enums
 
+# cocotb 2.0 passes a user-data object and expects ``cb(ud)``.
+# cocotb 2.1 dropped that argument and expects ``cb()``.
+_NO_USERDATA = object()
+
 
 class XsimRootHandle:
     def __init__(self, mgr):
@@ -121,11 +125,15 @@ class XsiPortHandle:
 
 class CbClosure(abc.ABC):
     def __init__(self) -> None:
-        self.cb: Callable[[Any], None] | None = None
-        self.ud: Any = None
+        self.cb: Callable[..., None] | None = None
+        self.ud: Any = _NO_USERDATA
 
     def __call__(self):
-        if self.cb is not None:
+        if self.cb is None:
+            return
+        if self.ud is _NO_USERDATA:
+            self.cb()
+        else:
             self.cb(self.ud)
 
     def deregister(self):
@@ -133,7 +141,7 @@ class CbClosure(abc.ABC):
 
 
 class TimedCbClosure(CbClosure):
-    def __init__(self, time_off, cb, ud):
+    def __init__(self, time_off, cb, ud=_NO_USERDATA):
         self.time_off = time_off
         self.cb = cb
         self.ud = ud
@@ -141,7 +149,7 @@ class TimedCbClosure(CbClosure):
 
 
 class ValueChangeCbClosure(CbClosure):
-    def __init__(self, handle, edge, cb, ud):
+    def __init__(self, handle, edge, cb, ud=_NO_USERDATA):
         self.handle = handle
         self.cb = cb
         self.ud = ud
@@ -179,15 +187,15 @@ class ValueChangeCbClosure(CbClosure):
 
 
 class ReadWriteCbClosure(CbClosure):
-    def __init__(self, callback, trigger):
+    def __init__(self, callback, ud=_NO_USERDATA):
         self.cb = callback
-        self.ud = trigger
+        self.ud = ud
 
 
 class ReadOnlyCbClosure(CbClosure):
-    def __init__(self, callback, trigger):
+    def __init__(self, callback, ud=_NO_USERDATA):
         self.cb = callback
-        self.ud = trigger
+        self.ud = ud
 
 
 __all__ = [
