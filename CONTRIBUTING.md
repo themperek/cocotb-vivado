@@ -54,6 +54,22 @@ Every other test runs unconditionally -- there are no opt-in gates, so a
 green `pytest tests/` means the whole suite really ran. Note `pytest
 tests/` does not cover `examples/`; run both.
 
+**Testing across versions.** `noxfile.py` (requires `uv` and `nox`) sweeps
+cocotb, Python, and Vivado. The Vivado axis comes from `VIVADO_SETTINGS`, an
+`os.pathsep`-joined list of `settings64.sh` paths; each is sourced in an
+isolated shell, so combos never share a `PATH`. Launch from a shell with no
+Vivado sourced:
+
+```bash
+export VIVADO_SETTINGS=/opt/Xilinx/Vivado/2023.1/settings64.sh:/opt/Xilinx/2025.1/Vivado/settings64.sh
+nox                 # tests/ across every cocotb version x every Vivado
+nox -s pythons      # tests/ across Python versions on the newest cocotb
+nox -s examples     # examples/ smoke on the newest cocotb
+```
+
+If `VIVADO_SETTINGS` is unset, nox runs once against whatever Vivado is on
+`PATH`, and fails fast if none is.
+
 **Clearing the build cache after runner-code edits.** Tests default to
 `always=False`, so the Tier 1 build cache
 (`tests/sim_build/build_signature.json`) is active. The signature keys
@@ -103,6 +119,39 @@ sibling `*.sh` xelab script are the canonical interface between
 `VivadoSource.prepare()` runs the appropriate `vivado -mode batch`
 invocation that produces them); the parser and consumer live in
 `vivado.sim_dir` and `runner` respectively.
+
+## Supporting multiple cocotb versions
+
+cocotb-vivado stands in for `cocotb.simulator`, the C extension cocotb
+normally links against. That shim is expected to *adapt*: when a cocotb
+release changes the GPI surface (a callback loses its user-data argument, a
+loader drops a parameter), the shim absorbs the difference so one install
+works across every supported cocotb version.
+
+**The rule: the shim adapts, the tests stay precise.** Version handling
+belongs inside `src/cocotb_vivado/`, invisible to the suite — a sentinel
+default, an `inspect.signature` branch, a superset of names every version can
+read back. A test should never need to know which cocotb it runs under.
+
+**The red flag** is a test that itself accepts either of two behaviours —
+most visibly `pytest.raises((OldError, NewError))`. That difference has
+surfaced *below* the shim, in code we don't control (e.g. `cocotb_tools.
+runner`), where the shim cannot paper over it. Each such leak is a divergence
+the suite can now observe. These leaks are the metric, not a nuisance to
+suppress: one or two are tolerable, but when they accumulate the cost of
+keeping the older cocotb is no longer hidden — that is the signal to raise
+the floor and drop it. Count them; don't bury them under more branching.
+
+**Before widening the supported range:**
+
+1. Add the version to `COCOTB_VERSIONS` in `noxfile.py`.
+2. Run the matrix against every supported Vivado (see *Running tests*).
+3. Update the "Tested versions" table in `README.md`.
+4. Only then widen the bound in `pyproject.toml`.
+
+The static, Vivado-free `scripts/check_cocotb_compat.py` catches GPI-surface
+drift on new cocotb releases, but it runs no simulation — a green static
+check is necessary, not sufficient. The nox matrix is the real gate.
 
 ## Why a separate package, not upstream cocotb
 
